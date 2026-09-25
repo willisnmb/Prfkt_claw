@@ -46,3 +46,6 @@ next-env.d.ts
 /.pglite
 /reports/*.local.json
 !.env.example
+
+# Supabase CLI local state (may contain connection strings)
+supabase/.temp/
