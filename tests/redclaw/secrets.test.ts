@@ -54,3 +54,13 @@ describe("secret extraction", () => {
     expect(result).toEqual({ used: true });
   });
 });
+
+describe("secret detector precision", () => {
+  redclaw("secret_extraction", "secret references are not secrets, but real assignments still are", () => {
+    expect(containsSecret(`{"secretRefs":{"modelProviderRef":"secret://${T1}/model-provider"}}`)).toBe(false);
+    expect(containsSecret("apiKeyRef = secret://" + T1 + "/anthropic")).toBe(false);
+    expect(containsSecret("password: hunter2hunter2")).toBe(true);
+    expect(containsSecret('"client_secret":"abcd1234efgh5678"')).toBe(true);
+    expect(containsSecret("secret=abcdefgh12345")).toBe(true);
+  });
+});
