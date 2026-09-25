@@ -24,10 +24,10 @@ Legend: ✅ passed with evidence · ⚠️ partial / verified only locally or ag
 - ✅ Loading, error and empty states on data pages.
 
 ## Auth/Data
-- ❌ Supabase connected (F-001).
+- ✅ Supabase connected: project `prfkt-claw` with migrations and seed applied.
 - ✅ Migrations and seed are idempotent (seed applied twice in tests; `--check` in CI).
 - ⚠️ Customer auth and ⚠️ admin auth: implemented and fail-closed. Signed-out denial is e2e-tested; there has been no live sign-in (F-001, F-002).
-- ✅ RLS isolation (PGlite with the Supabase stub) for every customer table plus FLOW tables. ⚠️ Not yet re-run on real Supabase.
+- ✅ RLS isolation: every customer table plus FLOW tables on PGlite, and 21/21 live checks on real Supabase (`scripts/verify-live-supabase.ts`).
 - ✅ Service role never in the browser: server-only env module; no `NEXT_PUBLIC_` secrets; secrets scan clean.
 
 ## Product
@@ -42,8 +42,8 @@ Legend: ✅ passed with evidence · ⚠️ partial / verified only locally or ag
 - ✅ Audited owner actions (same-transaction audit; append-only log).
 
 ## Provisioning
-- ✅ Disabled by default · ✅ adapter interface · ❌ OpenClaw adapter validated against a real deployment (F-006).
-- ⚠️ Duplicate, failure, resume, export, destroy, health and cost tests pass against the fake controller.
+- ✅ Disabled by default · ✅ adapter interface · ✅ OpenClaw adapter validated against real OpenClaw cells, 14/14 (`scripts/verify-live-openclaw.ts`).
+- ✅ Duplicate, failure, resume, export, destroy, health and cost tests pass against both the fake and the real controller. ⚠️ Cells have no model egress yet (F-006a).
 
 ## Billing
 - ✅ Disabled by default · ✅ webhook idempotency (FLOW dedupe plus signature and replay window) · ❌ subscription reconciliation (F-008).
@@ -61,4 +61,4 @@ Legend: ✅ passed with evidence · ⚠️ partial / verified only locally or ag
 - ❌ Support, privacy, terms and security contact (drafts and placeholders, F-014) · ❌ monitoring and error alerting (F-015) · ❌ domain and TLS (F-015) · ❌ independent verification.
 
 ## Release gates for READY (SECURITY.md)
-dependency_scan ✅ · secrets_scan ✅ · rls_isolation ⚠️ (PGlite only) · redclaw_critical ✅ · backup_restore ❌ · admin_authorization ⚠️ (no live auth) · public_abuse_controls ✅ · runtime_isolation ❌. **READY is blocked.**
+dependency_scan ✅ · secrets_scan ✅ · rls_isolation ✅ (live) · redclaw_critical ✅ · backup_restore ❌ (platform PITR drill) · admin_authorization ⚠️ (server-side checks live; owner MFA and a signed-in e2e still open) · public_abuse_controls ✅ · runtime_isolation ⚠️ (per-cell containers verified; shared host, no egress policy). **READY is blocked.**

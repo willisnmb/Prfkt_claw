@@ -2,11 +2,13 @@
 
 The control plane never talks to a runtime directly. Each customer trust domain gets **one isolated runtime cell**, and each cell is managed through a *cell controller* that implements this HTTP contract. `src/runtime/openclaw.ts` is the client. `tests/runtime/fake-controller.ts` is the reference fake the adapter is validated against.
 
-**Status:** only the fake has been validated. A controller that drives a real OpenClaw deployment (container/VM per cell, network policy, secret broker injection) is an owner-side dependency. See `docs/FINDINGS.md`.
+**Status:** reference implementation in `services/cell-controller/` (dependency-free, Node >= 23.6). It is deployed on the `joevps` host (Tailscale-only, bearer token, systemd). `scripts/verify-live-openclaw.ts` passed 14/14 against real OpenClaw 2026.9.4 cells on 2026-09-25.
+
+Each cell is a container with `--network none`, a read-only root, all capabilities dropped, `no-new-privileges`, memory, CPU and PID limits, a non-root user, separate state and backup volumes, and a per-cell gateway token in a `0600` env file that is never returned by the API.
 
 ## Transport and authentication
 
-- HTTPS only. Plain HTTP is accepted only for `localhost`/`127.0.0.1` during development.
+- HTTPS, except plain HTTP on loopback or the Tailscale range 100.64.0.0/10, where WireGuard encrypts traffic end to end. The reference controller binds only to its Tailscale IP.
 - `Authorization: Bearer <controller token>`. The token is resolved per call from a `secret://` reference through the secret broker, and is never stored in configuration, prompts or logs.
 - `x-prfkt-tenant: <tenant uuid>` on every per-cell call. The controller must refuse (403) when it doesn't match the cell's tenant.
 - `idempotency-key` on every mutating call. The controller must return the original response for a repeated key.

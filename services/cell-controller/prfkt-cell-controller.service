@@ -1,0 +1,25 @@
+[Unit]
+Description=PRFKT cell controller (one isolated OpenClaw container per customer)
+After=docker.service tailscaled.service network-online.target
+Requires=docker.service
+Wants=network-online.target
+
+[Service]
+User=joevps
+Group=joevps
+SupplementaryGroups=docker
+WorkingDirectory=/home/joevps/prfkt-cell-controller
+Environment=DOCKER_CONFIG=/home/joevps/.prfkt-cell-controller/docker
+EnvironmentFile=/home/joevps/.prfkt-cell-controller/controller.env
+ExecStart=/usr/bin/node /home/joevps/prfkt-cell-controller/controller.ts
+Restart=on-failure
+RestartSec=5
+MemoryMax=200M
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=/home/joevps/.prfkt-cell-controller
+
+[Install]
+WantedBy=multi-user.target

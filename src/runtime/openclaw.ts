@@ -72,8 +72,8 @@ export class OpenClawAdapter implements RuntimeAdapter {
 
   constructor(private readonly cfg: OpenClawAdapterConfig) {
     const u = new URL(cfg.controllerUrl);
-    if (u.protocol !== "https:" && !["localhost", "127.0.0.1"].includes(u.hostname)) {
-      throw new Error("cell controller must use https");
+    if (u.protocol !== "https:" && !isLoopbackOrTailnet(u.hostname)) {
+      throw new Error("cell controller must use https (plain http only on loopback or the Tailscale tailnet)");
     }
   }
 
@@ -194,4 +194,13 @@ export class OpenClawAdapter implements RuntimeAdapter {
     }
     throw last instanceof RuntimeAdapterError ? last : new RuntimeAdapterError(`controller unreachable: ${String(last)}`, true);
   }
+}
+
+/** Loopback, or Tailscale's CGNAT range 100.64.0.0/10, whose traffic WireGuard encrypts end to end. */
+export function isLoopbackOrTailnet(hostname: string): boolean {
+  if (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]") return true;
+  const m = /^100\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(hostname);
+  if (!m) return false;
+  const second = Number(m[1]);
+  return second >= 64 && second <= 127 && [m[2], m[3]].every((o) => Number(o) <= 255);
 }

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { OpenClawAdapter } from "@/runtime/openclaw";
+import { OpenClawAdapter, isLoopbackOrTailnet } from "@/runtime/openclaw";
 import { ProvisioningDisabledError, RuntimeAdapterError, type CellSpec } from "@/runtime/adapter";
 import { shieldValidate, estimateCell } from "@/runtime/shield-validate";
 import { routeModelCall } from "@/runtime/model-router";
@@ -130,6 +130,12 @@ describe("OpenClaw adapter — lifecycle against the cell-controller contract", 
     const h = await a.provision(spec, { idempotencyKey: "prov" });
     await expect(a.export({ ...h, tenantId: T2 })).rejects.toThrow(RuntimeAdapterError);
     expect((await a.health({ ...h, tenantId: T2 })).health).toBe("down");
+  });
+
+  it("allows plain http only on loopback and the Tailscale range", () => {
+    for (const h of ["localhost", "127.0.0.1", "100.64.0.1", "100.99.71.65", "100.127.255.254"]) expect(isLoopbackOrTailnet(h), h).toBe(true);
+    for (const h of ["100.63.255.255", "100.128.0.1", "10.0.0.1", "192.168.1.5", "controller.prfkt.test", "100.99.71.256"]) expect(isLoopbackOrTailnet(h), h).toBe(false);
+    expect(() => new OpenClawAdapter({ controllerUrl: "http://100.99.71.65:18950", getControllerToken: async () => "", provisioningEnabled: false })).not.toThrow();
   });
 
   it("refuses a plain-http controller outside localhost", () => {
