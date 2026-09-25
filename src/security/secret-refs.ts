@@ -43,7 +43,7 @@ export class SecretBroker {
   ) {}
 
   /** Resolves only within the caller's tenant; the value is passed to `use` and never returned. */
-  async withSecret<T>(callerTenantId: string, ref: string, purpose: SecretPurpose, use: (value: string) => Promise<T>): Promise<T> {
+  async withSecret<T>(callerTenantId: string, ref: string, purpose: SecretPurpose, consume: (value: string) => Promise<T>): Promise<T> {
     const parsed = parseSecretRef(ref);
     if (parsed.tenantId !== callerTenantId) {
       this.audit({ tenantId: callerTenantId, name: parsed.name, purpose, granted: false });
@@ -52,7 +52,7 @@ export class SecretBroker {
     const value = await this.store.get(parsed.tenantId, parsed.name);
     this.audit({ tenantId: callerTenantId, name: parsed.name, purpose, granted: value !== undefined });
     if (value === undefined) throw new SecretPolicyViolation("secret not found");
-    return use(value);
+    return consume(value);
   }
 }
 
