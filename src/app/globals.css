@@ -148,3 +148,54 @@
     @apply font-sans;
   }
 }
+/* storefront ------------------------------------------------------------
+ * Utilities owned by the public storefront. Tokens live above; do not
+ * redefine them here.
+ */
+@utility site-container {
+  width: 100%;
+  max-width: 80rem;
+  margin-inline: auto;
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
+  @media (width >= 40rem) {
+    padding-left: max(1.5rem, env(safe-area-inset-left));
+    padding-right: max(1.5rem, env(safe-area-inset-right));
+  }
+  @media (width >= 64rem) {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
+/* Faint engineering grid used behind page headers. */
+@utility bg-grid {
+  background-image:
+    linear-gradient(to right, oklch(1 0 0 / 4%) 1px, transparent 1px),
+    linear-gradient(to bottom, oklch(1 0 0 / 4%) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse 80% 70% at 30% 0%, black 30%, transparent 75%);
+}
+
+/* Warm glow behind the homepage hero. */
+@utility bg-hero-glow {
+  background:
+    radial-gradient(60rem 30rem at 15% -10%, oklch(0.82 0.16 75 / 16%), transparent 60%),
+    radial-gradient(40rem 24rem at 90% 10%, oklch(0.74 0.13 220 / 12%), transparent 60%);
+}
+
+html {
+  scroll-padding-top: 5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+/* end storefront */

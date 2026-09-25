@@ -1,0 +1,240 @@
+import type { CatalogItemInput } from "../schema";
+import { A } from "./_rules";
+
+const base = {
+  family: "CREW",
+  runtime: "crewai",
+  modelPolicies: ["balanced", "maximum-intelligence", "customer-provider"],
+  compute: ["cpu", "gpu-48gb"],
+  deployments: ["managed-cell", "private-cloud"],
+  maturity: "CONFIGURABLE",
+  profile: "SAFE",
+} as const satisfies Partial<CatalogItemInput>;
+
+export const CREW_ITEMS: CatalogItemInput[] = [
+  {
+    ...base,
+    slug: "marketing-crew",
+    name: "Marketing Crew",
+    foundation: "marketing-creative",
+    summary: "A strategist, copywriter, editor and brand reviewer working one campaign brief, with you approving what ships.",
+    description:
+      "The Marketing Crew takes a campaign brief and divides the work: the strategist proposes angles and channels, the copywriter drafts, the editor tightens and the brand reviewer checks against your guide. The crew shares one task board and one budget. Anything that would be published or sent waits for your approval.",
+    outcomes: [
+      "Campaign plans with angles, channels and drafts in one pass",
+      "Every draft reviewed against your brand guide",
+      "One shared budget and task board for the whole crew",
+    ],
+    integrations: ["Google Docs", "Figma", "HubSpot", "Buffer", "Notion"],
+    actions: [A.read, A.draft, A.write, A.publishApproval, A.sendApproval, A.adminDeny],
+    tags: ["campaigns", "team"],
+  },
+  {
+    ...base,
+    slug: "research-crew",
+    name: "Research Crew",
+    foundation: "research",
+    summary: "A lead researcher, analysts and a fact-checker that turn a question into a sourced brief you can defend.",
+    description:
+      "The lead researcher breaks your question into lines of inquiry, analysts investigate each one and the fact-checker verifies every claim against its cited source before the brief is assembled. Disagreements between analysts are shown, not hidden. Web and document content is treated as untrusted data throughout.",
+    outcomes: [
+      "Complex questions split into tracked lines of inquiry",
+      "Every claim checked against its source",
+      "Disagreements between analysts surfaced in the brief",
+    ],
+    integrations: ["Web search", "Google Drive", "SharePoint", "Zotero"],
+    actions: [A.read, A.draft, A.write, A.sendDeny, A.adminDeny],
+    tags: ["fact-checking", "briefs"],
+  },
+  {
+    ...base,
+    slug: "recruiting-crew",
+    name: "Recruiting Crew",
+    foundation: "operations",
+    summary: "Sourcing, screening and scheduling specialists that prepare shortlists — hiring decisions always stay with people.",
+    description:
+      "The sourcer builds a candidate list from your criteria, the screener summarises applications against the job's requirements with the evidence for each point, and the scheduler proposes interview slots. The crew never rejects or hires anyone; it prepares shortlists and drafts for your hiring team to decide on.",
+    outcomes: [
+      "Shortlists with evidence for each requirement",
+      "Interview scheduling drafted across calendars",
+      "Hiring and rejection decisions kept with people",
+    ],
+    integrations: ["Greenhouse", "Lever", "LinkedIn", "Google Calendar"],
+    actions: [A.read, A.draft, A.write, A.sendApproval, A.adminDeny],
+    tags: ["hiring", "screening"],
+  },
+  {
+    ...base,
+    slug: "sales-development-crew",
+    name: "Sales Development Crew",
+    foundation: "crm-sales",
+    summary: "Account research, qualification and personalised outreach drafted by a coordinated team, sent only on approval.",
+    description:
+      "A researcher profiles each target account, a qualifier scores it against your ideal-customer definition with reasons, and a writer drafts personalised outreach. Sends are approval-gated and rate-limited, recipients are checked against suppression lists, and every contact attempt is logged to your CRM.",
+    outcomes: [
+      "Account research and qualification with reasons",
+      "Personalised outreach drafts ready for review",
+      "Suppression lists and per-hour send limits enforced",
+    ],
+    integrations: ["HubSpot", "Salesforce", "Apollo", "Gmail"],
+    actions: [A.read, A.draft, A.write, A.sendApproval, A.adminDeny],
+    tags: ["outbound", "qualification"],
+  },
+  {
+    ...base,
+    slug: "support-escalation-crew",
+    name: "Support Escalation Crew",
+    foundation: "support",
+    summary: "A triage lead, investigator and writer that handle complex tickets together and hand you a resolution plan.",
+    description:
+      "For tickets that need more than a template, the triage lead gathers context, the investigator reproduces the issue from logs and account data it is allowed to read, and the writer drafts the customer reply and the internal bug report. Account changes and credits are approval-gated.",
+    outcomes: [
+      "Complex tickets investigated with evidence attached",
+      "Customer reply and internal bug report drafted together",
+      "Account changes and credits held for approval",
+    ],
+    integrations: ["Zendesk", "Jira", "Sentry", "Intercom"],
+    actions: [A.read, A.draft, A.write, A.sendApproval, A.spendApproval, A.adminDeny],
+    tags: ["escalations", "bugs"],
+  },
+  {
+    ...base,
+    slug: "launch-room-crew",
+    name: "Launch Room Crew",
+    foundation: "chief",
+    summary: "A coordinated team that keeps a product launch on track: plan, dependencies, comms drafts and a daily status.",
+    description:
+      "The Launch Room Crew keeps a launch plan with owners and dates, tracks dependencies across teams, drafts internal and external communications and writes a daily status for leadership. It highlights slips early and proposes options. Announcements are published only after approval.",
+    outcomes: [
+      "A launch plan with owners, dates and dependencies",
+      "Daily status that highlights slips early",
+      "Announcements drafted and held for approval",
+    ],
+    integrations: ["Asana", "Jira", "Slack", "Google Docs"],
+    actions: [A.read, A.draft, A.write, A.publishApproval, A.sendApproval, A.adminDeny],
+    tags: ["launch", "program-management"],
+  },
+  {
+    ...base,
+    slug: "finance-close-crew",
+    name: "Month-End Close Crew",
+    foundation: "finance-admin",
+    summary: "Specialists that prepare reconciliations, accrual drafts and variance notes so your close starts further ahead.",
+    description:
+      "The close crew prepares account reconciliations, drafts accrual and prepayment schedules, and writes variance explanations for review. Every figure links to the underlying records. Journal entries are drafts only; posting to the ledger requires your accountant's approval.",
+    outcomes: [
+      "Reconciliations prepared with links to source records",
+      "Accrual and variance drafts ready for review",
+      "Journal entries posted only after approval",
+    ],
+    integrations: ["NetSuite", "QuickBooks", "Xero", "Google Sheets"],
+    actions: [A.read, A.draft, A.writeApproval, A.spendDeny, A.adminDeny],
+    modelPolicies: ["local-first", "customer-provider"],
+    tags: ["close", "reconciliation"],
+  },
+  {
+    ...base,
+    slug: "code-review-crew",
+    name: "Code Review Crew",
+    foundation: "developer-builder",
+    summary: "Reviewers for correctness, security and tests that comment on pull requests — merging stays with your team.",
+    description:
+      "Each pull request gets a correctness reviewer, a security reviewer and a test reviewer. They comment with specific lines and reasons, and the crew lead summarises what must change before merge. The crew can suggest changes but cannot merge, deploy or change repository settings.",
+    outcomes: [
+      "Correctness, security and test reviews on every pull request",
+      "Line-specific comments with reasons",
+      "No merge, deploy or settings access",
+    ],
+    integrations: ["GitHub", "GitLab", "Bitbucket"],
+    actions: [A.read, A.draft, A.write, A.publishDraftOnly, A.deployDeny, A.adminDeny],
+    tags: ["pull-requests", "security-review"],
+  },
+  {
+    ...base,
+    slug: "compliance-evidence-crew",
+    name: "Compliance Evidence Crew",
+    foundation: "security-compliance",
+    summary: "Collectors and a reviewer that gather control evidence, map it to your framework and flag the gaps.",
+    description:
+      "Collectors gather screenshots, configuration exports and policy documents for each control; the reviewer maps them to your control framework and notes what is missing or stale. The result is a gap list and an evidence folder for your auditor. The crew does not certify anything — it prepares the evidence.",
+    outcomes: [
+      "Evidence collected and mapped to each control",
+      "Missing or stale evidence listed as gaps",
+      "An organised evidence folder for your auditor",
+    ],
+    integrations: ["Google Drive", "AWS", "GitHub", "Okta", "Jira"],
+    actions: [A.read, A.draft, A.write, A.sendDeny, A.adminDeny],
+    tags: ["audit", "controls"],
+  },
+  {
+    ...base,
+    slug: "merchandising-crew",
+    name: "Merchandising Crew",
+    foundation: "commerce-inventory",
+    summary: "A catalog editor, pricing analyst and promo planner that prepare product updates for your store to approve.",
+    description:
+      "The catalog editor improves titles, descriptions and attributes; the pricing analyst proposes price changes with the data behind them; the promo planner drafts promotions within the margin rules you set. Nothing changes on your storefront until you approve the batch.",
+    outcomes: [
+      "Product content improved in reviewable batches",
+      "Price proposals with supporting data",
+      "Promotions drafted within your margin rules",
+    ],
+    integrations: ["Shopify", "BigCommerce", "WooCommerce", "Google Merchant Center"],
+    actions: [A.read, A.draft, A.write, A.publishApproval, A.adminDeny],
+    tags: ["ecommerce", "pricing"],
+  },
+  {
+    ...base,
+    slug: "knowledge-curation-crew",
+    name: "Knowledge Curation Crew",
+    foundation: "knowledge-memory",
+    summary: "Curators that find outdated, duplicated or contradictory documentation and propose fixes with sources.",
+    description:
+      "The crew scans your knowledge base for pages that contradict each other, reference retired systems or duplicate content. Each finding comes with evidence and a proposed fix — merge, update or archive — for the page owner to approve. Archiving and deletion are approval-gated.",
+    outcomes: [
+      "Contradictory and outdated pages found with evidence",
+      "Merge, update or archive proposals for owners",
+      "No page removed without approval",
+    ],
+    integrations: ["Confluence", "Notion", "SharePoint", "Google Drive"],
+    actions: [A.read, A.draft, A.write, A.deleteApproval, A.adminDeny],
+    tags: ["documentation", "hygiene"],
+  },
+  {
+    ...base,
+    slug: "curriculum-design-crew",
+    name: "Curriculum Design Crew",
+    foundation: "learning-maker",
+    summary: "An instructional designer, subject expert and assessor that build a course outline, lessons and quizzes from your goals.",
+    description:
+      "Give the crew learning goals and source material; the instructional designer drafts the course structure, the subject expert writes lesson content grounded in your sources and the assessor writes quizzes aligned to each objective. You review and edit before anything is published to learners.",
+    outcomes: [
+      "Course outline aligned to your learning goals",
+      "Lessons grounded in your source material",
+      "Quizzes mapped to each objective",
+    ],
+    integrations: ["Google Docs", "Moodle", "Canvas", "Notion"],
+    actions: [A.read, A.draft, A.write, A.publishApproval, A.adminDeny],
+    tags: ["courses", "assessment"],
+  },
+  {
+    ...base,
+    slug: "family-game-crew",
+    name: "Family Game Master Crew",
+    foundation: "family-play",
+    summary: "A storyteller, rules keeper and puzzle maker that run age-appropriate games, with guardian controls throughout.",
+    description:
+      "The storyteller runs an adventure, the rules keeper keeps play fair and explains rules, and the puzzle maker creates challenges pitched to each player's age. Guardians set content limits and session length. The crew has no ability to purchase, message outside the family or share anything publicly.",
+    outcomes: [
+      "Story games pitched to each player's age",
+      "Guardian-set content limits and session lengths",
+      "No purchases, outside messaging or public sharing",
+    ],
+    integrations: ["Printable PDFs", "Family calendar"],
+    actions: [A.read, A.draft, A.write, A.sendDeny, A.spendDeny, A.publishDraftOnly, A.adminDeny],
+    modelPolicies: ["local-first", "lowest-cost"],
+    compute: ["cpu", "customer-hardware"],
+    deployments: ["managed-cell", "edge-device"],
+    tags: ["games", "kids", "guardian"],
+  },
+];

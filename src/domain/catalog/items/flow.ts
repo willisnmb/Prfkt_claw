@@ -1,0 +1,240 @@
+import type { CatalogItemInput } from "../schema";
+import { A } from "./_rules";
+
+const base = {
+  family: "FLOW",
+  runtime: "langgraph",
+  modelPolicies: ["balanced", "local-first", "lowest-cost"],
+  compute: ["cpu"],
+  deployments: ["managed-cell", "private-cloud"],
+  maturity: "CONFIGURABLE",
+  profile: "SAFE",
+} as const satisfies Partial<CatalogItemInput>;
+
+export const FLOW_ITEMS: CatalogItemInput[] = [
+  {
+    ...base,
+    slug: "lead-to-customer",
+    name: "Lead-to-Customer Workflow",
+    foundation: "crm-sales",
+    summary: "Takes a new lead from verification and research through an approved proposal, payment and go-live — one explicit step at a time.",
+    description:
+      "Lead-to-Customer moves each lead through named states: source verification, research, qualification, proposal draft, approval, send, reply, payment confirmation, provisioning review, configuration validation, acceptance testing and deployment approval. The workflow survives restarts without repeating completed steps, duplicate payment notifications cause a single transition, and a failed acceptance test blocks go-live.",
+    outcomes: [
+      "Every lead in exactly one named state, with a full timeline",
+      "Proposals sent only after approval of the exact draft",
+      "Duplicate notifications suppressed without duplicate side effects",
+      "Go-live blocked until acceptance tests pass and activation is approved",
+    ],
+    integrations: ["HubSpot", "Salesforce", "Gmail", "Stripe"],
+    actions: [A.read, A.draft, A.write, A.sendApproval, A.spendDeny, A.deployApproval, A.adminDeny],
+    tags: ["durable", "approvals", "pipeline"],
+  },
+  {
+    ...base,
+    slug: "invoice-approval",
+    name: "Invoice Approval Workflow",
+    foundation: "finance-admin",
+    summary: "Routes supplier invoices through extraction, policy checks and the right approvers before anything is scheduled for payment.",
+    description:
+      "Each invoice is extracted into a validated record, matched against purchase orders and checked against your approval matrix. It waits for the right approver, records the decision and prepares the payment batch for your finance team. The workflow never executes a payment; scheduling payment is a separate, approval-gated step in your own finance system.",
+    outcomes: [
+      "Invoices matched to purchase orders with mismatches flagged",
+      "Approval routed by amount and cost centre",
+      "Payment batches prepared, never executed automatically",
+    ],
+    integrations: ["QuickBooks", "Xero", "NetSuite", "Email"],
+    actions: [A.read, A.draft, A.write, A.spendDeny, A.sendApproval, A.adminDeny],
+    modelPolicies: ["local-first", "customer-provider"],
+    tags: ["accounts-payable", "approvals"],
+  },
+  {
+    ...base,
+    slug: "employee-onboarding",
+    name: "Employee Onboarding Workflow",
+    foundation: "operations",
+    summary: "Coordinates accounts, equipment, paperwork and first-week plans for every new hire, with each step owned and tracked.",
+    description:
+      "From signed offer to the end of the first week, the onboarding workflow creates the checklist for the role, requests accounts and equipment from the right teams, chases paperwork and schedules introductions. Account creation in production systems is approval-gated, and the workflow resumes cleanly if a step fails part-way.",
+    outcomes: [
+      "A role-specific onboarding checklist for every hire",
+      "Account and equipment requests routed and tracked",
+      "Production access granted only after approval",
+    ],
+    integrations: ["BambooHR", "Google Workspace", "Okta", "Slack"],
+    actions: [A.read, A.draft, A.writeApproval, A.sendApproval, A.adminDeny],
+    tags: ["hr", "onboarding"],
+  },
+  {
+    ...base,
+    slug: "refund-request",
+    name: "Refund Request Workflow",
+    foundation: "support",
+    summary: "Checks refund requests against order history and policy, then queues the refund for an agent to approve.",
+    description:
+      "The refund workflow validates each request against the order, delivery status and your written refund policy. Clear cases are prepared with a recommended decision; unusual ones go to a person with a summary. Issuing a refund is always an approval-gated action with per-day limits.",
+    outcomes: [
+      "Refund requests checked against order data and policy",
+      "Recommended decision with the reasoning attached",
+      "Refunds issued only after approval, within daily limits",
+    ],
+    integrations: ["Shopify", "Stripe", "Zendesk", "Gorgias"],
+    actions: [A.read, A.draft, A.write, A.spendApproval, A.sendApproval, A.adminDeny],
+    tags: ["refunds", "policy"],
+  },
+  {
+    ...base,
+    slug: "purchase-order",
+    name: "Purchase Order Workflow",
+    foundation: "commerce-inventory",
+    summary: "Turns purchase requests into validated purchase orders, routes approvals and tracks delivery against what was ordered.",
+    description:
+      "Purchase requests are normalised into structured orders, checked against budget and preferred suppliers, and routed for approval. Once approved, the draft order is ready to send to the supplier, and the workflow tracks confirmations and deliveries. Sending an order to a supplier is an approval-gated action.",
+    outcomes: [
+      "Structured purchase orders from free-text requests",
+      "Budget and supplier checks before approval",
+      "Delivery tracked against the approved order",
+    ],
+    integrations: ["NetSuite", "Odoo", "Google Sheets", "Email"],
+    actions: [A.read, A.draft, A.write, A.sendApproval, A.spendApproval, A.adminDeny],
+    tags: ["procurement", "suppliers"],
+  },
+  {
+    ...base,
+    slug: "content-publishing",
+    name: "Content Publishing Workflow",
+    foundation: "marketing-creative",
+    summary: "Moves content from brief to draft to review to scheduled publication, with brand and legal checks in between.",
+    description:
+      "A content piece moves through explicit states: brief, draft, brand check, legal check where required, approval and scheduling. Each state records who acted and when. Publication happens only from the approved version, and any edit after approval sends the piece back for re-approval.",
+    outcomes: [
+      "Every piece in a visible state from brief to published",
+      "Edits after approval automatically require re-approval",
+      "Scheduled publication from the approved version only",
+    ],
+    integrations: ["WordPress", "Webflow", "Contentful", "Buffer"],
+    actions: [A.read, A.draft, A.write, A.publishApproval, A.adminDeny],
+    modelPolicies: ["balanced", "maximum-intelligence"],
+    tags: ["editorial", "approvals"],
+  },
+  {
+    ...base,
+    slug: "vendor-due-diligence",
+    name: "Vendor Due Diligence Workflow",
+    foundation: "security-compliance",
+    summary: "Collects questionnaires, evidence and risk ratings for new vendors, and holds onboarding until review is complete.",
+    description:
+      "New vendors are sent the right questionnaire for their risk tier, answers and evidence are checked for completeness, and a draft risk rating is prepared for your reviewer. The vendor cannot move to approved until required evidence is present and a reviewer signs off. Outbound requests to vendors are approval-gated.",
+    outcomes: [
+      "Questionnaires matched to each vendor's risk tier",
+      "Completeness checks on answers and evidence",
+      "Approval blocked until evidence and sign-off are recorded",
+    ],
+    integrations: ["Google Forms", "Vanta", "Drata", "Email"],
+    actions: [A.read, A.draft, A.write, A.sendApproval, A.adminDeny],
+    tags: ["third-party-risk", "evidence"],
+  },
+  {
+    ...base,
+    slug: "contract-review",
+    name: "Contract Review Workflow",
+    foundation: "operations",
+    summary: "Compares incoming contracts to your playbook, drafts redlines and tracks each agreement to signature.",
+    description:
+      "Incoming contracts are compared clause by clause with your negotiation playbook. Deviations are highlighted with suggested fallback language, and the workflow tracks each agreement through legal review, business approval and signature. It prepares redlines but never signs or sends a contract without approval.",
+    outcomes: [
+      "Deviations from your playbook highlighted clause by clause",
+      "Suggested fallback language drafted for review",
+      "Status tracked from receipt to signature",
+    ],
+    integrations: ["DocuSign", "Google Drive", "SharePoint", "Email"],
+    actions: [A.read, A.draft, A.write, A.sendApproval, A.adminDeny],
+    modelPolicies: ["local-first", "customer-provider", "maximum-intelligence"],
+    tags: ["legal-ops", "redlines"],
+  },
+  {
+    ...base,
+    slug: "release-runbook",
+    name: "Release & Incident Runbook",
+    foundation: "developer-builder",
+    summary: "Executes your release and incident runbooks step by step, pausing for sign-off at every production-affecting step.",
+    description:
+      "Runbooks become explicit workflows: pre-flight checks, change announcement, deployment, verification and rollback. Each production-affecting step waits for an approval and records who approved it. If a step fails, the workflow stops in a known state and offers the documented recovery path instead of guessing.",
+    outcomes: [
+      "Runbooks executed consistently, step by step",
+      "Production changes only after recorded sign-off",
+      "Failures stop in a known state with the recovery path",
+    ],
+    integrations: ["GitHub Actions", "PagerDuty", "Slack", "Datadog"],
+    actions: [A.read, A.draft, A.write, A.deployApproval, A.sendApproval, A.adminDeny],
+    tags: ["runbooks", "incidents", "releases"],
+  },
+  {
+    ...base,
+    slug: "appointment-booking",
+    name: "Appointment Booking Workflow",
+    foundation: "voice-reception",
+    summary: "Handles booking requests from web, email and phone notes, checks availability and confirms on approval rules you set.",
+    description:
+      "Booking requests from any channel are turned into structured requests, checked against staff availability and your booking rules, and either confirmed within your rules or held for a person. Reminders and reschedules follow the same explicit states, and double-booking is prevented by design rather than by luck.",
+    outcomes: [
+      "Booking requests from any channel handled the same way",
+      "Confirmations only within the rules you set",
+      "Double-booking prevented by explicit state checks",
+    ],
+    integrations: ["Google Calendar", "Calendly", "Twilio", "Email"],
+    actions: [A.read, A.draft, A.write, A.sendApproval, A.adminDeny],
+    tags: ["scheduling", "reminders"],
+  },
+  {
+    ...base,
+    slug: "scheduled-research-report",
+    name: "Scheduled Research Report",
+    foundation: "research",
+    summary: "Produces a recurring market or competitor report with validated citations, delivered for review on your schedule.",
+    description:
+      "On the schedule you choose, the workflow gathers sources, extracts findings, validates that every claim has a citation and assembles the report. If sources are unavailable or validation fails, it stops and tells you instead of publishing a thinner report. Distribution to recipients requires approval.",
+    outcomes: [
+      "A recurring report with a citation for every claim",
+      "Validation failures stop the run instead of weakening it",
+      "Distribution only after approval",
+    ],
+    integrations: ["Web search", "RSS", "Google Docs", "Email"],
+    actions: [A.read, A.draft, A.write, A.sendApproval, A.adminDeny],
+    tags: ["reports", "monitoring"],
+  },
+  {
+    ...base,
+    slug: "access-review",
+    name: "Quarterly Access Review",
+    foundation: "security-compliance",
+    summary: "Collects who-has-access-to-what, asks each owner to confirm or revoke, and records the evidence for audit.",
+    description:
+      "The access review workflow pulls current access lists, sends each system owner their review, chases late responses and records every decision. Revocations are prepared as change requests and executed only after approval. The finished review is exported as audit evidence with timestamps and reviewers.",
+    outcomes: [
+      "Access lists gathered and assigned to owners",
+      "Every confirm or revoke decision recorded",
+      "Audit-ready evidence exported at the end",
+    ],
+    integrations: ["Okta", "Google Workspace", "Microsoft Entra ID", "GitHub"],
+    actions: [A.read, A.draft, A.write, A.deleteApproval, A.sendApproval, A.adminDeny],
+    tags: ["access", "audit"],
+  },
+  {
+    ...base,
+    slug: "restock-reorder",
+    name: "Restock & Reorder Workflow",
+    foundation: "commerce-inventory",
+    summary: "Watches stock levels, drafts reorders from supplier lead times and holds them for approval before ordering.",
+    description:
+      "The restock workflow tracks stock against reorder points and supplier lead times, drafts reorder quantities with the reasoning shown, and holds each order for approval. It follows the order through confirmation and receipt, and flags short deliveries. Spending limits per day and per supplier are enforced.",
+    outcomes: [
+      "Reorders drafted before stock runs out",
+      "Quantities explained using lead times and sales history",
+      "Daily and per-supplier spending ceilings enforced",
+    ],
+    integrations: ["Shopify", "Square", "Lightspeed", "Google Sheets"],
+    actions: [A.read, A.draft, A.write, A.spendApproval, A.sendApproval, A.adminDeny],
+    tags: ["inventory", "reorder"],
+  },
+];
