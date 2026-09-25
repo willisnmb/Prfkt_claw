@@ -1,0 +1,62 @@
+{
+  "name": "prfkt-claw",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint --max-warnings=0",
+    "typecheck": "next typegen && tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:redclaw": "vitest run tests/redclaw",
+    "test:flow:kill": "vitest run tests/flow/process-kill.test.ts",
+    "e2e": "playwright test",
+    "flow:worker": "tsx scripts/flow-worker.ts",
+    "gate": "npm run typecheck && npm run lint && npm run test && npm run scan:secrets && npm run build",
+    "scan:secrets": "tsx scripts/scan-secrets.ts",
+    "scan:deps": "npm audit --audit-level=high --omit=dev"
+  },
+  "dependencies": {
+    "@langchain/core": "^1.2.12",
+    "@langchain/langgraph": "^1.4.18",
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.117.2",
+    "class-variance-authority": "^0.7.1",
+    "cmdk": "^1.1.1",
+    "cn": "^0.4.0",
+    "lucide-react": "^1.48.0",
+    "next": "16.3.6",
+    "postgres": "^3.4.9",
+    "radix-ui": "^1.6.7",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "server-only": "^0.0.1",
+    "shadcn": "^4.21.0",
+    "sonner": "^2.0.8",
+    "tw-animate-css": "^1.4.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
+    "@playwright/test": "^1.63.0",
+    "@tailwindcss/postcss": "^4",
+    "@testing-library/dom": "^10.4.2",
+    "@testing-library/react": "^16.3.3",
+    "@types/node": "^22.20.4",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^6.1.1",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.6",
+    "jsdom": "^30.1.1",
+    "tailwindcss": "^4",
+    "tsx": "^4.23.15",
+    "typescript": "^5",
+    "vitest": "^5.0.2"
+  },
+  "engines": {
+    "node": ">=22.13.0"
+  }
+}
