@@ -42,7 +42,7 @@ export class SecretBroker {
     private readonly audit: (e: { tenantId: string; name: string; purpose: SecretPurpose; granted: boolean }) => void = () => {},
   ) {}
 
-  /** Resolves only within the caller's tenant; the value is passed to `use` and never returned. */
+  /** Resolves only within the caller's tenant; the value is passed to `consume` and never returned. */
   async withSecret<T>(callerTenantId: string, ref: string, purpose: SecretPurpose, consume: (value: string) => Promise<T>): Promise<T> {
     const parsed = parseSecretRef(ref);
     if (parsed.tenantId !== callerTenantId) {
