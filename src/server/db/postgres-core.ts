@@ -21,7 +21,24 @@ function wrap(client: PgClient, inTx: boolean): Sql {
  * processes (the FLOW worker). Next.js code must use getSql() from ./postgres.
  * prepare:false keeps compatibility with Supabase's transaction pooler.
  */
+/**
+ * json/jsonb parameters are passed through as-is when already a string.
+ * Callers bind `JSON.stringify(x)` to `$n::jsonb` (portable across drivers);
+ * postgres.js would otherwise JSON-encode that string a second time and store
+ * a jsonb *string* instead of an object. PGlite does not double-encode, so
+ * this keeps both bindings identical. Verified live by
+ * scripts/verify-live-supabase.ts ("jsonb parameters round-trip as objects").
+ */
+export function serializeJsonParam(x: unknown): string {
+  return typeof x === "string" ? x : JSON.stringify(x);
+}
+
+const jsonPassthrough = {
+  jsonb: { to: 3802, from: [3802], serialize: serializeJsonParam, parse: (x: string) => JSON.parse(x) as unknown },
+  json: { to: 114, from: [114], serialize: serializeJsonParam, parse: (x: string) => JSON.parse(x) as unknown },
+};
+
 export function createPostgresSql(url: string, max = 5): { sql: Sql; end: () => Promise<void> } {
-  const client = postgres(url, { max, prepare: false, idle_timeout: 20 });
+  const client = postgres(url, { max, prepare: false, idle_timeout: 20, types: jsonPassthrough });
   return { sql: wrap(client, false), end: () => client.end() };
 }
