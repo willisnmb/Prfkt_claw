@@ -28,6 +28,8 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm run lint
+      - name: Seed is generated from the catalog and current
+        run: npx tsx scripts/generate-seed.ts --check
       - name: Unit, RED CLAW, RLS and FLOW 01 tests (incl. process-kill resume)
         run: npm test
       - name: Secrets scan

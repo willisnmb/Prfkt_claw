@@ -40,6 +40,8 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   // Separate build dirs let parallel checkouts/agents build without clobbering each other.
   distDir: process.env.NEXT_DIST_DIR || ".next",
+  // Docker builds set NEXT_OUTPUT=standalone (see Dockerfile); `next start` keeps the default.
+  output: process.env.NEXT_OUTPUT === "standalone" ? "standalone" : undefined,
   poweredByHeader: false,
   serverExternalPackages: ["@electric-sql/pglite", "postgres"],
   async headers() {
