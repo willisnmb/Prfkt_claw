@@ -410,3 +410,16 @@ describe("follow-ups and loss", () => {
     expect((await listApprovals(h.sql, wf)).filter((a) => a.kind === "PROPOSAL_SEND")).toHaveLength(3);
   });
 });
+
+describe("in-transaction audit hooks", () => {
+  it("an audit failure rolls back the approval decision", async () => {
+    const e = h.engine();
+    const wf = await newRun(h, e);
+    await e.advance(wf);
+    const a = await pendingApproval(h.sql, wf, "PROPOSAL_SEND");
+    await expect(
+      e.decideApproval({ approvalId: a.id, decision: "approved", actor: "owner:o@prfkt.test", audit: async () => { throw new Error("audit store down"); } }),
+    ).rejects.toThrow(/audit store down/);
+    expect((await pendingApproval(h.sql, wf, "PROPOSAL_SEND")).status).toBe("pending");
+  });
+});

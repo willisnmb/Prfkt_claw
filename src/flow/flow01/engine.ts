@@ -60,6 +60,9 @@ type StepOutcome =
   | { type: "retry"; error: string; validator?: unknown; evidence?: EvidenceInput[]; metrics?: MetricsDelta }
   | { type: "fail"; status: "failed" | "blocked"; error: string; evidence?: EvidenceInput[]; metrics?: MetricsDelta; patch?: Partial<RunOutput> };
 
+/** Runs inside the same transaction as the operation, so its audit record commits (or rolls back) with it. */
+export type InTxAudit<T> = (tx: Sql, subject: T) => Promise<void>;
+
 export type AdvanceResult = {
   workflowId: string;
   state: Flow01State;
@@ -124,7 +127,7 @@ export class Flow01Engine {
   /* ------------------------------------------------------------ public API */
 
   /** Idempotent run creation: the same idempotency key always returns the same run. */
-  async createRun(input: { tenantId: string; leadId: string; lead: unknown; idempotencyKey: string }): Promise<{ run: FlowRun; created: boolean }> {
+  async createRun(input: { tenantId: string; leadId: string; lead: unknown; idempotencyKey: string; audit?: InTxAudit<FlowRun> }): Promise<{ run: FlowRun; created: boolean }> {
     const lead = Lead.parse(input.lead);
     return this.sql.transaction(async (tx) => {
       const inserted = await maybeOne<Record<string, unknown>>(
@@ -136,6 +139,7 @@ export class Flow01Engine {
       if (inserted) {
         const run = mapRun(inserted);
         await appendEvent(tx, run, { type: "run_created", to: "NEW_LEAD", stateVersion: 0, detail: { leadId: input.leadId } });
+        await input.audit?.(tx, run);
         return { run, created: true };
       }
       const existing = mapRun(await one(tx, "select * from public.flow_runs where idempotency_key = $1", [input.idempotencyKey]));
@@ -189,7 +193,7 @@ export class Flow01Engine {
   }
 
   /** Records an owner decision on a pending approval. Authorization is the caller's job (requireOwner). */
-  async decideApproval(input: { approvalId: string; decision: "approved" | "rejected"; actor: string; reason?: string }): Promise<ApprovalRow> {
+  async decideApproval(input: { approvalId: string; decision: "approved" | "rejected"; actor: string; reason?: string; audit?: InTxAudit<ApprovalRow> }): Promise<ApprovalRow> {
     return this.sql.transaction(async (tx) => {
       const row = await maybeOne<Record<string, unknown>>(
         tx,
@@ -209,6 +213,7 @@ export class Flow01Engine {
         actor: input.actor,
         detail: { approvalId: approval.id, kind: approval.kind, decision: input.decision, reason: input.reason ?? null },
       });
+      await input.audit?.(tx, approval);
       return approval;
     });
   }
@@ -267,7 +272,7 @@ export class Flow01Engine {
   }
 
   /** Operator retry for failed/blocked runs. Authorization is the caller's job. */
-  async retryRun(workflowId: string, actor: string): Promise<void> {
+  async retryRun(workflowId: string, actor: string, audit?: InTxAudit<FlowRun>): Promise<void> {
     await this.sql.transaction(async (tx) => {
       const row = await maybeOne<Record<string, unknown>>(
         tx,
@@ -277,6 +282,7 @@ export class Flow01Engine {
       if (!row) throw new FlowConflictError("run is not failed or blocked");
       const run = mapRun(row);
       await appendEvent(tx, run, { type: "operator_retry", from: run.currentState, stateVersion: run.stateVersion, actor });
+      await audit?.(tx, run);
     });
   }
 

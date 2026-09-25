@@ -20,7 +20,9 @@ const csp = [
   "base-uri 'self'",
   "form-action 'self'",
   "frame-ancestors 'none'",
-  ...(isDev ? [] : ["upgrade-insecure-requests"]),
+  // Only when the site is actually served over https: on plain-http origins
+  // (local production builds, CI) WebKit would rewrite every asset to https.
+  ...(!isDev && (process.env.NEXT_PUBLIC_APP_URL ?? "").startsWith("https://") ? ["upgrade-insecure-requests"] : []),
 ].join("; ");
 
 const securityHeaders = [
@@ -30,7 +32,9 @@ const securityHeaders = [
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=()" },
   { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
-  ...(isDev ? [] : [{ key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" }]),
+  ...(!isDev && (process.env.NEXT_PUBLIC_APP_URL ?? "").startsWith("https://")
+    ? [{ key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" }]
+    : []),
 ];
 
 const nextConfig: NextConfig = {

@@ -64,3 +64,14 @@ describe("secret detector precision", () => {
     expect(containsSecret("secret=abcdefgh12345")).toBe(true);
   });
 });
+
+describe("secret detector ignores code expressions", () => {
+  redclaw("secret_extraction", "code that names a secret is not a secret, but string literals are", () => {
+    expect(containsSecret("secret: serverEnv().PAYMENT_WEBHOOK_SECRET,")).toBe(false);
+    expect(containsSecret("secret: undefined,")).toBe(false);
+    expect(containsSecret("apiKey = process.env.ANTHROPIC_API_KEY")).toBe(false);
+    expect(containsSecret("password = config.passwordHash")).toBe(false);
+    expect(containsSecret('secret: "kq93nfa8shd7aa"')).toBe(true);
+    expect(containsSecret("api_key=a8f7d6s5a4f3d2s1")).toBe(true);
+  });
+});

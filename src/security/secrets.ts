@@ -28,7 +28,7 @@ export const SECRET_PATTERNS: readonly SecretPattern[] = [
   {
     id: "assignment",
     label: "Secret-looking assignment",
-    re: /\b(?:password|passwd|secret|api[_-]?key|access[_-]?token|refresh[_-]?token|service[_-]?role[_-]?key|client[_-]?secret)\b["']?\s*[:=](?![\\/])\s*["']?(?!secret:\/\/|\[REDACTED)[^\s"'`,;]{8,}/gi,
+    re: /\b(?:password|passwd|secret|api[_-]?key|access[_-]?token|refresh[_-]?token|service[_-]?role[_-]?key|client[_-]?secret)\b["']?\s*[:=](?![\\/])\s*["']?(?!secret:\/\/|\[REDACTED|(?:undefined|null|true|false)\b|process\.env\.|[A-Za-z_$][\w$]*(?:\(|\.[A-Za-z_$]))[^\s"'`,;]{8,}/gi,
   },
 ];
 
