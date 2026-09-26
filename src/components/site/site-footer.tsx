@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CONTACTS_ARE_PLACEHOLDERS, FOOTER_GROUPS, SECURITY_CONTACT, SUPPORT_EMAIL } from "./site-config";
+import { COMPANY_NAME, CONTACTS_ARE_PLACEHOLDERS, FOOTER_GROUPS, PRODUCT_NAME, SECURITY_CONTACT, SUPPORT_EMAIL } from "./site-config";
 import { Logo } from "./logo";
 
 export function SiteFooter() {
@@ -38,7 +38,9 @@ export function SiteFooter() {
         </div>
       </div>
       <div className="site-container flex flex-col gap-2 border-t border-border/50 pt-6 text-xs text-muted-foreground sm:flex-row sm:justify-between">
-        <p>© {new Date().getFullYear()} PRFKT. All systems subject to acceptance before go-live.</p>
+        <p>
+          © {new Date().getFullYear()} {COMPANY_NAME}. {PRODUCT_NAME} is a {COMPANY_NAME} product. All systems subject to acceptance before go-live.
+        </p>
         <p className="font-mono">Billing and provisioning: not yet enabled</p>
       </div>
     </footer>

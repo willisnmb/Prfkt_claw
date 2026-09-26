@@ -34,3 +34,14 @@ test.describe("public routes", () => {
     await expect(page.locator("main#main")).toBeFocused();
   });
 });
+
+test.describe("operating company", () => {
+  test("footer and legal pages name PRFKT_BYTE as the operator", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.getByRole("contentinfo")).toContainText("PRFKT_BYTE");
+    for (const path of ["/terms", "/privacy"]) {
+      await page.goto(path);
+      await expect(page.getByTestId("legal-operator")).toContainText("operated by PRFKT_BYTE");
+    }
+  });
+});
