@@ -20,6 +20,8 @@ const eslintConfig = defineConfig([
     ".next*/**",
     "playwright-report/**",
     "test-results/**",
+    // Claude Code worktrees and local settings: separate checkouts with their own build output.
+    ".claude/**",
   ]),
 ]);
 
