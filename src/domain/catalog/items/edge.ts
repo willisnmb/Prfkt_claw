@@ -1,0 +1,241 @@
+import type { CatalogItemInput } from "../schema";
+import { A } from "./_rules";
+
+const base = {
+  family: "EDGE",
+  runtime: "zeroclaw",
+  modelPolicies: ["local-only", "local-first"],
+  compute: ["customer-hardware", "cpu"],
+  deployments: ["edge-device", "on-prem"],
+  maturity: "CUSTOM",
+  profile: "SAFE",
+} as const satisfies Partial<CatalogItemInput>;
+
+export const EDGE_ITEMS: CatalogItemInput[] = [
+  {
+    ...base,
+    slug: "front-desk-kiosk",
+    name: "Front Desk Kiosk",
+    foundation: "voice-reception",
+    summary: "A check-in and wayfinding assistant that runs on a kiosk in your lobby, with models running on the device.",
+    description:
+      "The Front Desk Kiosk greets visitors, handles check-in against the day's appointments, answers common questions from your approved information and notifies the host. It runs locally on the kiosk hardware so visitor details stay on site. It cannot send messages outside your organisation.",
+    outcomes: [
+      "Visitor check-in against the day's appointments",
+      "Answers limited to your approved information",
+      "Visitor data kept on the device",
+    ],
+    integrations: ["Local calendar sync", "Slack", "Microsoft Teams"],
+    actions: [A.read, A.write, A.sendDeny, A.adminDeny],
+    tags: ["kiosk", "check-in"],
+  },
+  {
+    ...base,
+    slug: "store-counter-assistant",
+    name: "Store Counter Assistant",
+    foundation: "commerce-inventory",
+    summary: "Helps staff look up stock, product details and store policy at the counter — on a small in-store box.",
+    description:
+      "Store staff ask about stock levels, product details, alternatives and store policy; the assistant answers from your synced catalog and policy documents. It runs on an in-store device, continues to answer from its last sync if the internet drops, and has read-only access to your systems.",
+    outcomes: [
+      "Stock and product answers at the counter",
+      "Keeps working from the last sync when offline",
+      "Read-only access to store systems",
+    ],
+    integrations: ["Shopify POS", "Square", "Lightspeed"],
+    actions: [A.read, A.sendDeny, A.spendDeny, A.adminDeny],
+    tags: ["retail", "offline"],
+  },
+  {
+    ...base,
+    slug: "field-notes-offline",
+    name: "Offline Field Notes",
+    foundation: "operations",
+    summary: "A field technician's assistant that works without signal: checklists, notes and photos turned into reports.",
+    description:
+      "Technicians dictate or type notes and follow checklists on a rugged laptop or tablet. The assistant structures them into a job report on the device and queues the report for sync when a connection returns. Nothing is uploaded until the technician confirms the report.",
+    outcomes: [
+      "Job reports assembled on the device, without signal",
+      "Checklists followed step by step",
+      "Upload only after the technician confirms",
+    ],
+    integrations: ["Job management export", "CSV", "Photo library"],
+    actions: [A.read, A.draft, A.write, A.sendApproval, A.adminDeny],
+    tags: ["field-service", "offline"],
+  },
+  {
+    ...base,
+    slug: "local-document-search",
+    name: "Local Document Search",
+    foundation: "knowledge-memory",
+    summary: "Ask questions of a folder of documents on your own machine — nothing is uploaded anywhere.",
+    description:
+      "Point it at a folder and it indexes the documents locally, then answers questions with references to the files and passages used. The index and the models live on your machine. File access is limited to the folders you choose, and links that escape those folders are refused.",
+    outcomes: [
+      "Answers with references to local files and passages",
+      "Index and models stay on your machine",
+      "Access limited to the folders you choose",
+    ],
+    integrations: ["Local folders", "PDF", "Markdown", "Office documents"],
+    actions: [A.read, A.sendDeny, A.deleteDeny, A.adminDeny],
+    compute: ["customer-hardware", "unified-memory-node"],
+    tags: ["private", "search"],
+  },
+  {
+    ...base,
+    slug: "home-hub",
+    name: "Home Hub",
+    foundation: "family-play",
+    summary: "A household assistant on a small home server: family calendar, reminders and homework help that stays at home.",
+    description:
+      "Home Hub runs on a small computer in your home. It keeps the family calendar and reminders, helps with homework at an age-appropriate level and answers household questions from your own notes. Guardians control each profile. It has no purchasing ability and no public sharing.",
+    outcomes: [
+      "Family calendar and reminders kept at home",
+      "Homework help with guardian-set limits",
+      "No purchasing and no public sharing",
+    ],
+    integrations: ["Calendar sync", "Local notes"],
+    actions: [A.read, A.draft, A.write, A.sendDeny, A.spendDeny, A.adminDeny],
+    tags: ["home", "family", "guardian"],
+  },
+  {
+    ...base,
+    slug: "maker-bench",
+    name: "Maker Bench Assistant",
+    foundation: "learning-maker",
+    summary: "A workshop helper on a single-board computer: project steps, parts lists and troubleshooting at the bench.",
+    description:
+      "Maker Bench walks you through builds step by step, keeps parts lists and wiring notes per project and helps troubleshoot from your own photos and notes. It runs on a single-board computer or an old laptop at the bench, and works offline once your project files are loaded.",
+    outcomes: [
+      "Step-by-step build guidance per project",
+      "Parts lists and wiring notes kept together",
+      "Works offline at the bench",
+    ],
+    integrations: ["Local project folders", "Markdown", "Photos"],
+    actions: [A.read, A.draft, A.write, A.sendDeny, A.adminDeny],
+    tags: ["maker", "workshop"],
+  },
+  {
+    ...base,
+    slug: "classroom-tutor",
+    name: "Classroom Tutor Station",
+    foundation: "learning-maker",
+    summary: "A tutor that runs on school-owned hardware, keeping student questions and progress inside the school.",
+    description:
+      "Classroom Tutor Station runs on hardware the school owns. Students ask questions and practise with guidance aligned to the teacher's lesson materials; teachers see progress and set boundaries. Student data does not leave the school's network.",
+    outcomes: [
+      "Practice aligned to the teacher's materials",
+      "Progress visible to the teacher",
+      "Student data kept on the school network",
+    ],
+    integrations: ["Local lesson library", "Google Classroom export"],
+    actions: [A.read, A.draft, A.write, A.sendDeny, A.publishDraftOnly, A.adminDeny],
+    compute: ["customer-hardware", "unified-memory-node"],
+    tags: ["education", "on-prem"],
+  },
+  {
+    ...base,
+    slug: "local-reception-line",
+    name: "Local Reception Line",
+    foundation: "voice-reception",
+    summary: "Answers your phone line from a box in your office: takes messages, books from open slots and hands off to a person.",
+    description:
+      "Local Reception Line answers calls, takes structured messages, books appointments into open slots you define and transfers to a person on request or when unsure. Speech processing runs on your hardware. It follows your script and cannot make outbound calls.",
+    outcomes: [
+      "Calls answered and messages captured in a structured form",
+      "Bookings only into open slots you define",
+      "Transfer to a person on request or when unsure",
+    ],
+    integrations: ["SIP phone system", "Local calendar", "Email"],
+    actions: [A.read, A.write, A.sendApproval, A.adminDeny],
+    compute: ["customer-hardware", "unified-memory-node"],
+    tags: ["phone", "reception"],
+  },
+  {
+    ...base,
+    slug: "equipment-log-watcher",
+    name: "Equipment Log Watcher",
+    foundation: "operations",
+    summary: "Reads machine and sensor logs on site, summarises what changed and raises alerts in plain language.",
+    description:
+      "The watcher reads equipment and sensor logs on a local device, summarises shifts in behaviour and raises plain-language alerts to the people on duty. It has read-only access to logs and cannot change equipment settings. Alerts and summaries stay on the local network unless you enable forwarding.",
+    outcomes: [
+      "Plain-language summaries of equipment behaviour",
+      "Alerts routed to the people on duty",
+      "Read-only: no access to equipment settings",
+    ],
+    integrations: ["Syslog", "MQTT", "CSV exports"],
+    actions: [A.read, A.draft, A.sendApproval, A.deployDeny, A.adminDeny],
+    tags: ["monitoring", "industrial"],
+  },
+  {
+    ...base,
+    slug: "private-daily-brief",
+    name: "Private Daily Brief",
+    foundation: "chief",
+    summary: "A personal morning brief built on your own laptop from your calendar, notes and tasks — nothing leaves the device.",
+    description:
+      "Private Daily Brief reads your local calendar, notes and task files and writes a short brief each morning: what is due, what changed and what to prepare. The models run on your laptop. It has no send capability and works only with the folders and calendars you grant.",
+    outcomes: [
+      "A morning brief assembled on your own device",
+      "Only granted folders and calendars are read",
+      "No outbound sending capability",
+    ],
+    integrations: ["Local calendar", "Markdown notes", "Task files"],
+    actions: [A.read, A.draft, A.sendDeny, A.adminDeny],
+    tags: ["personal", "private"],
+  },
+  {
+    ...base,
+    slug: "local-code-helper",
+    name: "Local Code Helper",
+    foundation: "developer-builder",
+    summary: "A coding helper that runs on your workstation against local repositories, for code that must not leave the machine.",
+    description:
+      "Local Code Helper explains code, drafts changes and writes tests against repositories on your machine, using local models. It works inside the repository you open, refuses paths outside it and runs only the commands on your allowlist. Pushing and publishing are yours to do.",
+    outcomes: [
+      "Code explanations and drafts without uploading code",
+      "Access confined to the open repository",
+      "Commands limited to your allowlist",
+    ],
+    integrations: ["Git", "Local editor", "Test runner"],
+    actions: [A.read, A.draft, A.write, A.publishDraftOnly, A.deployDeny, A.adminDeny],
+    compute: ["customer-hardware", "unified-memory-node", "gpu-24gb"],
+    tags: ["code", "private"],
+  },
+  {
+    ...base,
+    slug: "shop-floor-assistant",
+    name: "Shop Floor Assistant",
+    foundation: "operations",
+    summary: "Answers procedure and safety questions on the shop floor from your own manuals, on hardware you control.",
+    description:
+      "Operators ask how to perform a procedure, what a warning means or which part fits; the assistant answers from your manuals and work instructions with references. It runs on a local server or panel PC, works through network outages and has no ability to change machine settings.",
+    outcomes: [
+      "Procedure and safety answers from your own manuals",
+      "References to the exact instruction used",
+      "Works through network outages",
+    ],
+    integrations: ["Manual library", "Work instructions", "Local wiki"],
+    actions: [A.read, A.sendDeny, A.deployDeny, A.adminDeny],
+    compute: ["customer-hardware", "unified-memory-node"],
+    tags: ["manufacturing", "manuals"],
+  },
+  {
+    ...base,
+    slug: "small-office-help-desk",
+    name: "Small Office Help Desk",
+    foundation: "support",
+    summary: "An IT help desk for a small office on a local box: password-reset guidance, printer fixes and ticket drafts.",
+    description:
+      "Staff ask for help with common IT problems and get step-by-step guidance from your own procedures. Anything it cannot solve becomes a drafted ticket for your IT provider. It has no administrative access to accounts or devices; resets and changes are done by a person.",
+    outcomes: [
+      "Step-by-step fixes from your own procedures",
+      "Unresolved issues drafted as tickets",
+      "No administrative access to accounts or devices",
+    ],
+    integrations: ["Local procedures", "Email", "Ticket export"],
+    actions: [A.read, A.draft, A.sendApproval, A.adminDeny],
+    tags: ["it-support", "small-business"],
+  },
+];

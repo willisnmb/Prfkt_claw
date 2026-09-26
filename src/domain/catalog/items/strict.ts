@@ -1,0 +1,240 @@
+import type { CatalogItemInput } from "../schema";
+import { A } from "./_rules";
+
+const base = {
+  family: "STRICT",
+  runtime: "pydanticai",
+  modelPolicies: ["lowest-cost", "balanced", "local-first"],
+  compute: ["cpu", "gpu-24gb"],
+  deployments: ["managed-cell", "private-cloud"],
+  maturity: "CONFIGURABLE",
+  profile: "SAFE",
+} as const satisfies Partial<CatalogItemInput>;
+
+export const STRICT_ITEMS: CatalogItemInput[] = [
+  {
+    ...base,
+    slug: "invoice-extractor",
+    name: "Invoice Extractor",
+    foundation: "finance-admin",
+    summary: "Turns invoices and receipts into validated records — totals, tax, line items — or rejects them with a reason.",
+    description:
+      "Every document becomes a record that must pass a strict schema: supplier, dates, currency, line items, tax and totals that add up. Anything that fails validation is rejected with the specific reason instead of being guessed at. Validated records are written to your accounting system as drafts.",
+    outcomes: [
+      "Structured invoice records with arithmetic checks",
+      "Failed documents rejected with the exact reason",
+      "Validated records posted as drafts, not final entries",
+    ],
+    integrations: ["QuickBooks", "Xero", "Email inbox", "Google Drive"],
+    actions: [A.read, A.draft, A.writeApproval, A.spendDeny, A.adminDeny],
+    tags: ["extraction", "accounts-payable"],
+  },
+  {
+    ...base,
+    slug: "lead-scoring",
+    name: "Lead Scoring App",
+    foundation: "crm-sales",
+    summary: "Scores inbound leads against your ideal-customer definition with a typed, explainable result for every lead.",
+    description:
+      "Each lead receives a score, a tier and the specific evidence behind it, in a fixed schema your CRM can rely on. Leads with missing or contradictory information are routed for review instead of being scored on a guess. Scores are written to your CRM; outreach is left to your team or a separate approved workflow.",
+    outcomes: [
+      "Score, tier and evidence for every inbound lead",
+      "Incomplete leads routed to review, not guessed",
+      "Consistent fields your CRM automations can trust",
+    ],
+    integrations: ["HubSpot", "Salesforce", "Webhooks"],
+    actions: [A.read, A.write, A.sendDeny, A.adminDeny],
+    tags: ["scoring", "inbound"],
+  },
+  {
+    ...base,
+    slug: "ticket-classifier",
+    name: "Ticket Classifier",
+    foundation: "support",
+    summary: "Classifies every support ticket by topic, urgency and product area into a fixed taxonomy your team controls.",
+    description:
+      "Tickets are classified into your taxonomy with a confidence value; low-confidence results go to a person instead of a default bucket. Taxonomy changes are versioned so reports stay comparable. The app only reads tickets and writes classification fields.",
+    outcomes: [
+      "Consistent topic, urgency and product-area tags",
+      "Low-confidence tickets routed to a person",
+      "Versioned taxonomy for comparable reporting",
+    ],
+    integrations: ["Zendesk", "Freshdesk", "Intercom", "Jira Service Management"],
+    actions: [A.read, A.write, A.sendDeny, A.adminDeny],
+    tags: ["classification", "routing"],
+  },
+  {
+    ...base,
+    slug: "inventory-reconciler",
+    name: "Inventory Reconciler",
+    foundation: "commerce-inventory",
+    summary: "Reconciles stock counts across your store, warehouse and marketplaces and explains every discrepancy it finds.",
+    description:
+      "The reconciler reads stock positions from each system, normalises SKUs and units, and produces a typed discrepancy report with likely causes. Proposed adjustments are drafts; applying an adjustment to a system of record requires approval.",
+    outcomes: [
+      "Stock positions reconciled across every channel",
+      "Discrepancies explained with likely causes",
+      "Adjustments applied only after approval",
+    ],
+    integrations: ["Shopify", "Amazon Seller Central", "NetSuite", "ShipBob"],
+    actions: [A.read, A.draft, A.writeApproval, A.adminDeny],
+    tags: ["inventory", "reconciliation"],
+  },
+  {
+    ...base,
+    slug: "contract-clause-extractor",
+    name: "Contract Clause Extractor",
+    foundation: "operations",
+    summary: "Extracts parties, dates, renewal terms and key clauses from agreements into a register you can search and report on.",
+    description:
+      "Agreements are parsed into a strict contract record: parties, effective and renewal dates, notice periods, liability caps and other clauses you define. Each field links to the passage it came from, and missing fields are reported rather than invented. The register flags renewals ahead of their notice deadlines.",
+    outcomes: [
+      "A searchable contract register with linked passages",
+      "Missing terms reported, never invented",
+      "Renewal and notice deadlines flagged in advance",
+    ],
+    integrations: ["DocuSign", "Google Drive", "SharePoint", "Box"],
+    actions: [A.read, A.write, A.sendDeny, A.adminDeny],
+    modelPolicies: ["local-first", "customer-provider", "maximum-intelligence"],
+    tags: ["contracts", "register"],
+  },
+  {
+    ...base,
+    slug: "catalog-normalizer",
+    name: "Product Catalog Normalizer",
+    foundation: "commerce-inventory",
+    summary: "Cleans supplier product feeds into one validated catalog schema: attributes, units, categories and variants.",
+    description:
+      "Supplier feeds arrive in every shape. The normalizer maps each one into your catalog schema, standardises units and attribute values, assigns categories and groups variants. Rows that cannot be mapped confidently are held for review. Publishing the normalised catalog to your store is approval-gated.",
+    outcomes: [
+      "Supplier feeds mapped to one catalog schema",
+      "Units, attributes and variants standardised",
+      "Unmappable rows held for review",
+    ],
+    integrations: ["CSV/SFTP feeds", "Shopify", "Akeneo", "Google Merchant Center"],
+    actions: [A.read, A.draft, A.write, A.publishApproval, A.adminDeny],
+    tags: ["pim", "feeds"],
+  },
+  {
+    ...base,
+    slug: "provisioning-spec-validator",
+    name: "Provisioning Spec Validator",
+    foundation: "developer-builder",
+    summary: "Checks infrastructure and environment requests against typed policies before anything is created.",
+    description:
+      "Environment and infrastructure requests are parsed into a typed specification and checked against your policies: allowed regions, sizes, network exposure, secret references rather than inline secrets, and required tags. Violations are returned with the rule that failed. The validator never provisions anything itself.",
+    outcomes: [
+      "Requests checked against typed infrastructure policies",
+      "Inline secrets and public exposure rejected with reasons",
+      "No provisioning side effects — validation only",
+    ],
+    integrations: ["Terraform plans", "GitHub", "Kubernetes manifests"],
+    actions: [A.read, A.draft, A.deployDeny, A.adminDeny],
+    tags: ["policy-as-code", "infrastructure"],
+  },
+  {
+    ...base,
+    slug: "form-intake",
+    name: "Form & Document Intake",
+    foundation: "operations",
+    summary: "Turns emailed forms, PDFs and scans into validated records in your systems, with a person reviewing exceptions.",
+    description:
+      "Applications, claims, registrations and other forms arrive by email or upload. The intake app extracts them into your schema, validates required fields and formats, and writes valid records to your system. Attachments are scanned and treated as untrusted; exceptions go to a review queue with the reason.",
+    outcomes: [
+      "Forms and scans turned into validated records",
+      "Exceptions queued for review with the reason",
+      "Attachments scanned and handled as untrusted input",
+    ],
+    integrations: ["Email inbox", "Google Drive", "Airtable", "Salesforce"],
+    actions: [A.read, A.write, A.sendDeny, A.adminDeny],
+    tags: ["documents", "extraction"],
+  },
+  {
+    ...base,
+    slug: "expense-policy-checker",
+    name: "Expense Policy Checker",
+    foundation: "finance-admin",
+    summary: "Checks every expense claim against your written policy and returns a typed pass, fail or needs-review result.",
+    description:
+      "Expense claims and receipts are validated against your policy rules — limits, categories, required approvals and receipts. Each claim receives a structured verdict with the rule that applied. Reimbursement remains in your finance system and requires its normal approval.",
+    outcomes: [
+      "Structured verdict for every claim with the rule applied",
+      "Missing receipts and over-limit items flagged",
+      "Reimbursement left to your normal approval process",
+    ],
+    integrations: ["Expensify", "Ramp", "Brex", "QuickBooks"],
+    actions: [A.read, A.write, A.spendDeny, A.adminDeny],
+    tags: ["expenses", "policy"],
+  },
+  {
+    ...base,
+    slug: "call-summary",
+    name: "Call Summary App",
+    foundation: "voice-reception",
+    summary: "Turns call recordings or transcripts into typed notes: caller, reason, outcome, follow-ups and consent status.",
+    description:
+      "Each call becomes a structured note with the caller, the reason for the call, what was agreed and any follow-ups with owners. Recording consent is captured as a field, and calls without it are not processed. Notes are written to your CRM or ticketing system.",
+    outcomes: [
+      "Structured notes for every call",
+      "Follow-ups with owners and dates",
+      "Calls without recorded consent skipped",
+    ],
+    integrations: ["Twilio", "Aircall", "HubSpot", "Zendesk"],
+    actions: [A.read, A.write, A.sendDeny, A.adminDeny],
+    modelPolicies: ["local-first", "lowest-cost"],
+    tags: ["calls", "notes"],
+  },
+  {
+    ...base,
+    slug: "cited-answers",
+    name: "Cited Answers App",
+    foundation: "knowledge-memory",
+    summary: "Answers questions from your documents only when it can cite them — otherwise it says it does not know.",
+    description:
+      "Every answer must pass a citation contract: each statement references a passage from your approved sources. If the contract cannot be met, the app says so rather than answering from general knowledge. Retrieved documents are treated as untrusted data, never as instructions.",
+    outcomes: [
+      "Answers that cite a specific passage for each statement",
+      "Explicit 'not found' instead of unsupported answers",
+      "Only approved sources are searched",
+    ],
+    integrations: ["SharePoint", "Confluence", "Google Drive", "Notion"],
+    actions: [A.read, A.sendDeny, A.adminDeny],
+    tags: ["q-and-a", "citations"],
+  },
+  {
+    ...base,
+    slug: "quiz-generator",
+    name: "Quiz Generator",
+    foundation: "learning-maker",
+    summary: "Generates quizzes from your material with a validated answer key and a source reference for every question.",
+    description:
+      "The quiz generator creates multiple-choice, short-answer and worked-problem questions from your lessons. Every question has a validated answer key and a link to the source passage, and distractors are checked not to be accidentally correct. Teachers review before quizzes are shared with learners.",
+    outcomes: [
+      "Quizzes with validated answer keys",
+      "A source reference for every question",
+      "Teacher review before sharing",
+    ],
+    integrations: ["Google Classroom", "Canvas", "Moodle", "PDF"],
+    actions: [A.read, A.draft, A.publishApproval, A.adminDeny],
+    modelPolicies: ["local-first", "lowest-cost", "balanced"],
+    tags: ["education", "assessment"],
+  },
+  {
+    ...base,
+    slug: "work-order-validator",
+    name: "Work Order Validator",
+    foundation: "operations",
+    summary: "Validates manufacturing and maintenance work orders against specifications before they reach the floor.",
+    description:
+      "Work orders are parsed into a typed record and checked against the bill of materials, routing, tolerances and safety requirements. Invalid orders are returned with the failed rule; valid ones are released to your planning system as drafts for a supervisor to confirm.",
+    outcomes: [
+      "Work orders checked against specs and safety rules",
+      "Failed checks returned with the rule that failed",
+      "Release to the floor confirmed by a supervisor",
+    ],
+    integrations: ["SAP", "Odoo", "Fiix", "Google Sheets"],
+    actions: [A.read, A.draft, A.writeApproval, A.adminDeny],
+    deployments: ["managed-cell", "private-cloud", "on-prem"],
+    tags: ["manufacturing", "maintenance"],
+  },
+];
