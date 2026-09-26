@@ -7,6 +7,10 @@ import { FAMILIES } from "@/domain/families";
  * are shown with a visible "placeholder" note so they are never mistaken for
  * real addresses.
  */
+/** The company that operates the site and sells PRFKT CLAW. Override with NEXT_PUBLIC_COMPANY_NAME (e.g. the full legal name). */
+export const COMPANY_NAME = process.env.NEXT_PUBLIC_COMPANY_NAME || "PRFKT_BYTE";
+export const PRODUCT_NAME = "PRFKT CLAW";
+
 export const SUPPORT_EMAIL = process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@prfkt.example";
 export const SECURITY_CONTACT = process.env.NEXT_PUBLIC_SECURITY_CONTACT || "security@prfkt.example";
 export const CONTACTS_ARE_PLACEHOLDERS = !process.env.NEXT_PUBLIC_SUPPORT_EMAIL || !process.env.NEXT_PUBLIC_SECURITY_CONTACT;

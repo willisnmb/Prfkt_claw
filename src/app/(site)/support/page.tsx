@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHeader, Section } from "@/components/site/page-header";
-import { CONTACTS_ARE_PLACEHOLDERS, SECURITY_CONTACT, SUPPORT_EMAIL } from "@/components/site/site-config";
+import { COMPANY_NAME, CONTACTS_ARE_PLACEHOLDERS, SECURITY_CONTACT, SUPPORT_EMAIL } from "@/components/site/site-config";
 
-export const metadata: Metadata = { title: "Support", description: "How to reach PRFKT support and report security issues." };
+export const metadata: Metadata = { title: "Support", description: `How to reach ${COMPANY_NAME} support for PRFKT CLAW and report security issues.` };
 
 export default function SupportPage() {
   return (

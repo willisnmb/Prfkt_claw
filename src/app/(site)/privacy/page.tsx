@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { LegalPage } from "@/components/site/legal-page";
-import { SECURITY_CONTACT, SUPPORT_EMAIL } from "@/components/site/site-config";
+import { COMPANY_NAME, SECURITY_CONTACT, SUPPORT_EMAIL } from "@/components/site/site-config";
 
-export const metadata: Metadata = { title: "Privacy", description: "How PRFKT handles personal data, customer data, secrets, export and deletion." };
+export const metadata: Metadata = { title: "Privacy", description: `How ${COMPANY_NAME} handles personal data, customer data, secrets, export and deletion.` };
 
 export default function PrivacyPage() {
   return (

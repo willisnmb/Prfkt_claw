@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { COMPANY_NAME } from "@/components/site/site-config";
 import "./globals.css";
 
 const geistSans = Geist({ variable: "--font-sans", subsets: ["latin"] });
@@ -12,6 +13,9 @@ export const metadata: Metadata = {
   title: { default: "PRFKT CLAW — Finished AI systems", template: "%s · PRFKT CLAW" },
   description:
     "Finished AI systems — assistants, workflows, agent teams, validated apps, private and edge deployments — governed by one security layer.",
+  applicationName: "PRFKT CLAW",
+  publisher: COMPANY_NAME,
+  creator: COMPANY_NAME,
 };
 
 export const viewport: Viewport = {

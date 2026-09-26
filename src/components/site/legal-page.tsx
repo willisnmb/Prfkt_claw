@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { PageHeader } from "./page-header";
+import { COMPANY_NAME, PRODUCT_NAME } from "./site-config";
 
 /** Shared layout for policy pages. `draft` shows a visible owner-review notice. */
 export function LegalPage({ title, lede, updated, draft, children }: { title: string; lede: string; updated: string; draft?: boolean; children: ReactNode }) {
@@ -14,6 +15,9 @@ export function LegalPage({ title, lede, updated, draft, children }: { title: st
           </div>
         )}
         <article className="max-w-3xl space-y-6 text-pretty [&_h2]:mt-10 [&_h2]:text-xl [&_h2]:font-semibold [&_li]:ml-5 [&_li]:list-disc [&_p]:text-muted-foreground [&_ul]:space-y-2 [&_ul]:text-muted-foreground">
+          <p data-testid="legal-operator">
+            This website and the {PRODUCT_NAME} service are operated by {COMPANY_NAME} (&ldquo;we&rdquo;, &ldquo;us&rdquo;, &ldquo;our&rdquo;).
+          </p>
           {children}
           <p className="pt-6 font-mono text-xs">Last updated {updated}</p>
         </article>
