@@ -24,7 +24,8 @@ ENV NEXT_OUTPUT=standalone NEXT_TELEMETRY_DISABLED=1 \
     NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY \
     NEXT_PUBLIC_SUPPORT_EMAIL=$NEXT_PUBLIC_SUPPORT_EMAIL \
     NEXT_PUBLIC_SECURITY_CONTACT=$NEXT_PUBLIC_SECURITY_CONTACT
-RUN npm run build
+# public/ is optional (git does not track empty dirs); ensure it exists for the copy below.
+RUN mkdir -p public && npm run build
 
 FROM node:22-alpine AS run
 WORKDIR /app
