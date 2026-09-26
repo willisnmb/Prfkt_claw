@@ -41,6 +41,15 @@ const EnvSchema = z.object({
   BILLING_ENABLED: flag,
   PROVISIONING_ENABLED: flag,
   PAYMENT_WEBHOOK_SECRET: optionalString,
+  /**
+   * Stripe (F-008). Server-only; used only when BILLING_ENABLED=true. The key's
+   * format and mode are checked where it is used (checkStripeKey), so a bad
+   * value disables FLOW 01 with a reason instead of breaking every page.
+   */
+  STRIPE_SECRET_KEY: optionalString,
+  STRIPE_WEBHOOK_SECRET: optionalString,
+  /** Live-mode keys (sk_live_/rk_live_) are refused unless this is the literal "true". */
+  STRIPE_ALLOW_LIVE: flag,
   OLLAMA_BASE_URL: optionalUrl,
   /** PRFKT cell controller (docs/runtime/CELL_CONTROLLER.md). Server-only; the token never reaches the browser. */
   PRFKT_CELL_CONTROLLER_URL: optionalUrl,

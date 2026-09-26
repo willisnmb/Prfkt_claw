@@ -14,7 +14,7 @@ Legend: ✅ passed with evidence · ⚠️ partial / verified only locally or ag
 - ✅ Reproducible install: `npm ci` from the lockfile (Node 22).
 - ✅ Strict TypeScript: `npm run typecheck` is clean.
 - ✅ Lint: `npm run lint`, zero warnings.
-- ✅ Unit tests: `npm test`, 19 files, all passing (see the latest handoff for exact counts).
+- ✅ Unit tests: `npm test`, 28 files and 310 tests, all passing (2026-09-26, after the Stripe slice).
 - ✅ Production build: 125 pages; admin and dashboard routes are dynamic.
 - ✅ Playwright smoke: 257 passed, 0 failed, 0 flaky, 3 skipped (documented capability skips, F-017).
 
@@ -46,7 +46,10 @@ Legend: ✅ passed with evidence · ⚠️ partial / verified only locally or ag
 - ✅ Duplicate, failure, resume, export, destroy, health and cost tests pass against both the fake and the real controller. ⚠️ Cells have no model egress yet (F-006a).
 
 ## Billing
-- ✅ Disabled by default · ✅ webhook idempotency (FLOW dedupe plus signature and replay window) · ❌ subscription reconciliation (F-008).
+- ✅ Disabled by default: `BILLING_ENABLED=false` in every environment, and FLOW 01 is disabled in production. Stripe is used only with `BILLING_ENABLED=true`, a key, and the stored `billing_enabled` flag. Live keys are refused unless `STRIPE_ALLOW_LIVE=true`.
+- ⚠️ Payment provider: the Stripe adapter is in code (`src/billing/stripe.ts`: customer find-or-create, finalized `send_invoice` invoice, an idempotency key on every POST, and an invoice lookup that covers retries after the 24-hour key window). It has been tested only against a fake Stripe API and has not run against a Stripe test account. Invoices are not emailed yet (F-008).
+- ✅ Webhook idempotency and verification: FLOW dedupe on the event id, plus the signature and replay window. Stripe deliveries go to `/api/flow/webhooks/stripe`; `Stripe-Signature` is checked over the raw body before parsing, and a failure returns 400. Tested end to end on PGlite, and RED CLAW covers forged, replayed and redelivered events.
+- ⚠️ Invoice and payment reconciliation: `scripts/reconcile-stripe.ts` records paid invoices whose webhook was missed. It is idempotent, read-only against Stripe, and tested on PGlite, but no scheduler is attached. ❌ Subscription reconciliation: no subscriptions are modelled (F-008).
 - ✅ No activation before payment policy: FLOW 01 requires a webhook-confirmed, owner-approved payment before provisioning; DB triggers enforce it.
 
 ## Recovery
