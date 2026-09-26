@@ -1,6 +1,7 @@
 import { z } from "zod";
 import {
   ProvisioningDisabledError,
+  type CallOpts,
   RuntimeAdapterError,
   type CellHandle,
   type CellSpec,
@@ -87,19 +88,19 @@ export class OpenClawAdapter implements RuntimeAdapter {
     return estimateCell(spec);
   }
 
-  async provision(spec: CellSpec, { idempotencyKey }: { idempotencyKey: string }): Promise<CellHandle> {
+  async provision(spec: CellSpec, { idempotencyKey, signal }: { idempotencyKey: string } & CallOpts): Promise<CellHandle> {
     this.requireEnabled("provision");
     const v = await this.validate(spec);
     if (!v.ok) throw new RuntimeAdapterError(`cell spec rejected: ${v.problems.join("; ")}`, false);
-    const res = CellStatus.parse(await this.call("POST", "/v1/cells", idempotencyKey, spec));
+    const res = CellStatus.parse(await this.call("POST", "/v1/cells", idempotencyKey, spec, undefined, signal));
     if (res.tenantId !== spec.tenantId || res.cellId !== spec.cellId) throw new RuntimeAdapterError("controller returned a different cell", false);
     return { tenantId: res.tenantId, cellId: res.cellId, runtime: this.id, endpointRef: res.endpointRef };
   }
 
-  async health(h: CellHandle): Promise<HealthReport> {
+  async health(h: CellHandle, opts: CallOpts = {}): Promise<HealthReport> {
     const checkedAt = new Date().toISOString();
     try {
-      const r = Health.parse(await this.call("GET", `/v1/cells/${h.cellId}/health`, undefined, undefined, h.tenantId));
+      const r = Health.parse(await this.call("GET", `/v1/cells/${h.cellId}/health`, undefined, undefined, h.tenantId, opts.signal));
       const backupAgeH = r.lastBackupAt ? (Date.now() - Date.parse(r.lastBackupAt)) / 3.6e6 : null;
       return {
         health: r.healthy ? "healthy" : "degraded",
@@ -133,28 +134,28 @@ export class OpenClawAdapter implements RuntimeAdapter {
     }
   }
 
-  async suspend(h: CellHandle, { idempotencyKey }: { idempotencyKey: string }) {
+  async suspend(h: CellHandle, { idempotencyKey, signal }: { idempotencyKey: string } & CallOpts) {
     this.requireEnabled("suspend");
-    await this.call("POST", `/v1/cells/${h.cellId}/suspend`, idempotencyKey, {}, h.tenantId);
+    await this.call("POST", `/v1/cells/${h.cellId}/suspend`, idempotencyKey, {}, h.tenantId, signal);
   }
 
-  async resume(h: CellHandle, { idempotencyKey }: { idempotencyKey: string }) {
+  async resume(h: CellHandle, { idempotencyKey, signal }: { idempotencyKey: string } & CallOpts) {
     this.requireEnabled("resume");
-    await this.call("POST", `/v1/cells/${h.cellId}/resume`, idempotencyKey, {}, h.tenantId);
+    await this.call("POST", `/v1/cells/${h.cellId}/resume`, idempotencyKey, {}, h.tenantId, signal);
   }
 
-  async export(h: CellHandle): Promise<ExportBundle> {
-    const r = Export.parse(await this.call("GET", `/v1/cells/${h.cellId}/export`, undefined, undefined, h.tenantId));
+  async export(h: CellHandle, opts: CallOpts = {}): Promise<ExportBundle> {
+    const r = Export.parse(await this.call("GET", `/v1/cells/${h.cellId}/export`, undefined, undefined, h.tenantId, opts.signal));
     const text = JSON.stringify(r);
     if (findSecrets(text).length) throw new RuntimeAdapterError("export contained secret material; refusing to hand it out", false);
     return { cellId: h.cellId, tenantId: h.tenantId, exportedAt: new Date().toISOString(), ...r };
   }
 
-  async destroy(h: CellHandle, o: { idempotencyKey: string; confirmCellId: string; exportTaken: boolean }): Promise<DestroyReceipt> {
+  async destroy(h: CellHandle, o: { idempotencyKey: string; confirmCellId: string; exportTaken: boolean } & CallOpts): Promise<DestroyReceipt> {
     this.requireEnabled("destroy");
     if (o.confirmCellId !== h.cellId) throw new RuntimeAdapterError("destroy confirmation does not match the cell id", false);
     if (!o.exportTaken) throw new RuntimeAdapterError("take a customer export before destroying a cell", false);
-    await this.call("DELETE", `/v1/cells/${h.cellId}`, o.idempotencyKey, undefined, h.tenantId);
+    await this.call("DELETE", `/v1/cells/${h.cellId}`, o.idempotencyKey, undefined, h.tenantId, o.signal);
     return { cellId: h.cellId, destroyedAt: new Date().toISOString(), exportTaken: true };
   }
 
@@ -164,11 +165,12 @@ export class OpenClawAdapter implements RuntimeAdapter {
     if (!this.cfg.provisioningEnabled) throw new ProvisioningDisabledError(op);
   }
 
-  private async call(method: string, path: string, idempotencyKey?: string, body?: unknown, tenantId?: string): Promise<unknown> {
+  private async call(method: string, path: string, idempotencyKey?: string, body?: unknown, tenantId?: string, signal?: AbortSignal): Promise<unknown> {
     const f = this.cfg.fetchImpl ?? fetch;
     const attempts = this.cfg.maxAttempts ?? 3;
     let last: unknown;
     for (let i = 0; i < attempts; i++) {
+      if (signal?.aborted) throw new RuntimeAdapterError(`controller ${method} ${path} cancelled`, false);
       try {
         const res = await f(new URL(path, this.cfg.controllerUrl), {
           method,
@@ -179,7 +181,9 @@ export class OpenClawAdapter implements RuntimeAdapter {
             ...(tenantId ? { "x-prfkt-tenant": tenantId } : {}),
           },
           body: body === undefined ? undefined : JSON.stringify(body),
-          signal: AbortSignal.timeout(this.cfg.timeoutMs ?? 15_000),
+          signal: signal
+            ? AbortSignal.any([signal, AbortSignal.timeout(this.cfg.timeoutMs ?? 15_000)])
+            : AbortSignal.timeout(this.cfg.timeoutMs ?? 15_000),
         });
         if (res.status >= 500 || res.status === 429) {
           last = new RuntimeAdapterError(`controller ${method} ${path} → ${res.status}`, true);

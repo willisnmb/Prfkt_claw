@@ -85,6 +85,26 @@ describe("OpenClaw adapter — lifecycle against the cell-controller contract", 
     expect(ctl.requests).toHaveLength(1);
   });
 
+  it("a cancelled caller signal stops the call and its retries (F-012)", async () => {
+    const ac = new AbortController();
+    ac.abort();
+    await expect(adapter().provision(spec, { idempotencyKey: "p", signal: ac.signal })).rejects.toMatchObject({ retryable: false });
+    expect(ctl.requests).toHaveLength(0);
+
+    ctl = new FakeCellController();
+    ctl.failNext = 5;
+    const mid = new AbortController();
+    const realFetch = ctl.fetch;
+    const counting: typeof fetch = async (input, init) => {
+      const res = await realFetch(input, init);
+      mid.abort();
+      return res;
+    };
+    const a = new OpenClawAdapter({ controllerUrl: "https://controller.prfkt.test", getControllerToken: async () => ctl.token, provisioningEnabled: true, fetchImpl: counting, maxAttempts: 3 });
+    await expect(a.provision(spec, { idempotencyKey: "p", signal: mid.signal })).rejects.toMatchObject({ retryable: false });
+    expect(ctl.requests).toHaveLength(1);
+  });
+
   it("suspend and resume are idempotent and reflected in health", async () => {
     const a = adapter();
     const h = await a.provision(spec, { idempotencyKey: "prov" });

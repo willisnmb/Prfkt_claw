@@ -391,7 +391,7 @@ export class Flow01Engine {
     const started = performance.now();
     let outcome: StepOutcome;
     try {
-      outcome = await withTimeout(this.handle(run), FLOW01_POLICY.limits.stepTimeoutMs, `${run.currentState} step timed out`);
+      outcome = await withTimeout((signal) => this.handle(run, signal), FLOW01_POLICY.limits.stepTimeoutMs, `${run.currentState} step timed out`);
     } catch (err) {
       if (err instanceof SimulatedCrash) throw err;
       outcome =
@@ -572,7 +572,7 @@ export class Flow01Engine {
 
   /* -------------------------------------------------------------- handlers */
 
-  private async handle(run: FlowRun): Promise<StepOutcome> {
+  private async handle(run: FlowRun, signal: AbortSignal): Promise<StepOutcome> {
     const out = run.output;
     const lead = run.lead;
     switch (run.currentState) {
@@ -604,7 +604,7 @@ export class Flow01Engine {
         let result;
         try {
           result = await this.effect(run, "research", "research", key, { v: run.stateVersion, a: run.retryCount }, () =>
-            this.adapters.research.research({ idempotencyKey: key, lead, prompt: { system: prompt.messages[0]!.content, user: prompt.messages[1]!.content } }),
+            this.adapters.research.research({ idempotencyKey: key, signal, lead, prompt: { system: prompt.messages[0]!.content, user: prompt.messages[1]!.content } }),
           );
         } catch (err) {
           if (err instanceof ModelTimeoutError) return { type: "retry", error: "model timeout during research", metrics: { modelCalls: 1 } };
@@ -699,7 +699,7 @@ export class Flow01Engine {
         if (!blast.ok) return { type: "fail", status: "blocked", error: `blast radius: ${blast.detail}` };
         const key = `${run.workflowId}:email.send:${approval!.id}`;
         const sent = await this.effect(run, "email", "send", key, { to: proposal.to, hash: payloadHash(proposal) }, () =>
-          this.adapters.email.send({ idempotencyKey: key, to: proposal.to, subject: proposal.subject, body: proposal.body }),
+          this.adapters.email.send({ idempotencyKey: key, signal, to: proposal.to, subject: proposal.subject, body: proposal.body }),
         );
         const sentAt = this.clock();
         return {
@@ -734,7 +734,7 @@ export class Flow01Engine {
         const key = `${run.workflowId}:payment.createInvoice`;
         // Draft invoice for exactly the approved proposal amount; payment itself is confirmed by webhook + owner approval.
         const invoice = await this.effect(run, "payment", "createInvoice", key, { amount: proposal.priceCents }, () =>
-          this.adapters.payment.createInvoice({ idempotencyKey: key, customerEmail: proposal.to, amountCents: proposal.priceCents, reference: run.workflowId }),
+          this.adapters.payment.createInvoice({ idempotencyKey: key, signal, customerEmail: proposal.to, amountCents: proposal.priceCents, reference: run.workflowId }),
         );
         return { type: "transition", to: "PAYMENT_CONFIRMATION", patch: { invoiceId: invoice.invoiceId } };
       }
@@ -777,7 +777,7 @@ export class Flow01Engine {
         this.authorize(run, { payloadHash: payloadHash(out.cellPlan) }, approval);
         const key = `${run.workflowId}:provision:${approval!.id}`;
         try {
-          const cell = await this.effect(run, "provisioner", "provision", key, plan, () => this.adapters.provisioner.provision({ idempotencyKey: key, plan }));
+          const cell = await this.effect(run, "provisioner", "provision", key, plan, () => this.adapters.provisioner.provision({ idempotencyKey: key, signal, plan }));
           return {
             type: "transition",
             to: "CONFIG_VALIDATION",
@@ -792,7 +792,7 @@ export class Flow01Engine {
           }
           // Permanent or exhausted: compensate idempotently, then stop without advancing.
           const tkey = `${run.workflowId}:teardown:${approval!.id}:${run.metrics.failuresTotal}`;
-          const removed = await this.effect(run, "provisioner", "teardown", tkey, { key }, () => this.adapters.provisioner.teardown({ idempotencyKey: key }));
+          const removed = await this.effect(run, "provisioner", "teardown", tkey, { key }, () => this.adapters.provisioner.teardown({ idempotencyKey: key, signal }));
           return {
             type: "fail",
             status: "failed",
@@ -823,7 +823,7 @@ export class Flow01Engine {
 
       case "ACCEPTANCE_TEST": {
         const cell = out.cell!;
-        const result = await this.adapters.acceptance.run({ cellId: cell.cellId, config: cell.config });
+        const result = await this.adapters.acceptance.run({ cellId: cell.cellId, config: cell.config, signal });
         const evidenceId = await insertEvidence(this.sql, run, { kind: "acceptance_test", passed: result.passed, content: result });
         if (!result.passed) {
           const failed = result.checks.filter((c) => !c.passed).map((c) => c.name);
@@ -870,13 +870,23 @@ function errorMessage(e: unknown): string {
   return e instanceof Error ? `${e.name}: ${e.message}` : String(e);
 }
 
-async function withTimeout<T>(p: Promise<T>, ms: number, message: string): Promise<T> {
+/**
+ * Runs `fn` with a deadline. On timeout the step fails and `signal` is aborted,
+ * so adapters that honour it cancel the underlying call instead of leaving it
+ * running after the engine has moved on (F-012).
+ */
+export async function withTimeout<T>(fn: (signal: AbortSignal) => Promise<T>, ms: number, message: string): Promise<T> {
+  const ac = new AbortController();
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     return await Promise.race([
-      p,
+      fn(ac.signal),
       new Promise<never>((_, reject) => {
-        timer = setTimeout(() => reject(new Error(message)), ms);
+        timer = setTimeout(() => {
+          const err = new Error(message);
+          reject(err);
+          ac.abort(err);
+        }, ms);
       }),
     ]);
   } finally {

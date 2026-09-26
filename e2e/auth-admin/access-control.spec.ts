@@ -134,3 +134,13 @@ test.describe("sign-in page", () => {
     expect(hrefs.some((h) => h.includes("evil.example"))).toBe(false);
   });
 });
+
+test.describe("owner MFA page is not usable signed out", () => {
+  test("/login/mfa redirects to /login and renders no enrolment or challenge", async ({ request }) => {
+    const res = await request.get("/login/mfa?next=/admin", { maxRedirects: 0 });
+    expect([303, 307, 308]).toContain(res.status());
+    expect(res.headers()["location"] ?? "").toMatch(/^\/login/);
+    const body = await res.text();
+    for (const marker of ["Set up authenticator app", "6-digit code", "Setup key"]) expect(body).not.toContain(marker);
+  });
+});

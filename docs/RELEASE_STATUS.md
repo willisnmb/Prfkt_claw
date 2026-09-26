@@ -26,7 +26,7 @@ Legend: ✅ passed with evidence · ⚠️ partial / verified only locally or ag
 ## Auth/Data
 - ✅ Supabase connected: project `prfkt-claw` with migrations and seed applied.
 - ✅ Migrations and seed are idempotent (seed applied twice in tests; `--check` in CI).
-- ⚠️ Customer auth and ⚠️ admin auth: implemented and fail-closed. Signed-out denial is e2e-tested; there has been no live sign-in (F-001, F-002).
+- ⚠️ Customer auth and ⚠️ admin auth: implemented and fail-closed; owners need TOTP MFA at AAL2 (F-002, unit- and e2e-tested signed out). There has been no live signed-in run (F-001).
 - ✅ RLS isolation: every customer table plus FLOW tables on PGlite, and 21/21 live checks on real Supabase (`scripts/verify-live-supabase.ts`).
 - ✅ Service role never in the browser: server-only env module; no `NEXT_PUBLIC_` secrets; secrets scan clean.
 
@@ -36,7 +36,7 @@ Legend: ✅ passed with evidence · ⚠️ partial / verified only locally or ag
 ## Security
 - ✅ SHIELD baseline (profiles, action firewall, blast radius, injection handling, guards).
 - ✅ Public abuse controls: honeypot, per-IP and per-email rate limits (⚠️ F-005).
-- ✅ Rate limiting · ✅ secrets scan (0 findings) · ✅ dependency scan (0 vulnerabilities) · ✅ security headers (⚠️ F-003).
+- ✅ Rate limiting · ✅ secrets scan (0 findings; gitleaks over full history in CI) · ✅ dependency scan (0 vulnerabilities) · ✅ security headers (⚠️ F-003).
 - ✅ RED CLAW critical suite: all 16 SECURITY.md categories, at least 2 cases each, mutation-checked.
 - ✅ Cross-tenant isolation (DB, secret broker, tool broker, runtime handles).
 - ✅ Audited owner actions (same-transaction audit; append-only log).
@@ -61,4 +61,4 @@ Legend: ✅ passed with evidence · ⚠️ partial / verified only locally or ag
 - ❌ Support, privacy, terms and security contact (drafts and placeholders, F-014) · ❌ monitoring and error alerting (F-015) · ❌ domain and TLS (F-015) · ❌ independent verification.
 
 ## Release gates for READY (SECURITY.md)
-dependency_scan ✅ · secrets_scan ✅ · rls_isolation ✅ (live) · redclaw_critical ✅ · backup_restore ❌ (platform PITR drill) · admin_authorization ⚠️ (server-side checks live; owner MFA and a signed-in e2e still open) · public_abuse_controls ✅ · runtime_isolation ⚠️ (per-cell containers verified; shared host, no egress policy). **READY is blocked.**
+dependency_scan ✅ · secrets_scan ✅ · rls_isolation ✅ (live) · redclaw_critical ✅ · backup_restore ❌ (platform PITR drill) · admin_authorization ⚠️ (server-side checks and owner MFA in code; a live signed-in run still open) · public_abuse_controls ✅ · runtime_isolation ⚠️ (per-cell containers verified; shared host, no egress policy). **READY is blocked.**

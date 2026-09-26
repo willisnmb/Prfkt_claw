@@ -30,14 +30,14 @@ export default async function AdminSecurityPage() {
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
             <p>
-              Owner access requires a server-verified Supabase session, a confirmed email, and that email in <code className="font-mono">ADMIN_EMAILS</code>. It is
+              Owner access requires a server-verified Supabase session, a confirmed email, that email in <code className="font-mono">ADMIN_EMAILS</code>, and a
+              verified authenticator-app factor used in this session (AAL2). It is
               checked on every admin request and action. There is no query-string key, cookie flag, header or client-side switch.
             </p>
             <p>
               Configured owners ({env.ADMIN_EMAILS.length}): {env.ADMIN_EMAILS.map(mask).join(", ") || "none"}. You are signed in as {owner.email}.
             </p>
             <p>Revoke an owner by removing the address from ADMIN_EMAILS; the next request is denied.</p>
-            <p className="text-warning">Multi-factor authentication is not yet enforced for owners (tracked finding). Enable MFA in Supabase Auth before launch.</p>
           </CardContent>
         </Card>
         <Card>

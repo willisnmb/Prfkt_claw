@@ -44,6 +44,43 @@ jobs:
           include-hidden-files: true
           retention-days: 1
 
+  gitleaks:
+    name: Secrets scan (gitleaks, full history)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GITLEAKS_VERSION: 8.24.2
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install gitleaks (checksum-verified)
+        run: |
+          base="https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}"
+          file="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -sSfLO "$base/$file"
+          curl -sSfL "$base/gitleaks_${GITLEAKS_VERSION}_checksums.txt" | grep " $file\$" | sha256sum -c -
+          tar xzf "$file" gitleaks
+      - name: Scan
+        run: ./gitleaks git --redact --no-banner --exit-code 1 .
+
+  docker:
+    name: Docker image build and smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build --build-arg NEXT_PUBLIC_APP_URL=http://localhost:3000 -t prfkt-claw:ci .
+      - name: Container serves the storefront as a non-root user
+        run: |
+          docker run -d --name claw -p 3000:3000 prfkt-claw:ci
+          for i in $(seq 1 30); do curl -sf http://127.0.0.1:3000/ >/dev/null && break; sleep 2; done
+          curl -sf http://127.0.0.1:3000/ | grep -q "PRFKT"
+          curl -sf -o /dev/null http://127.0.0.1:3000/catalog
+          test "$(docker exec claw id -u)" != "0"
+      - if: failure()
+        run: docker logs claw || true
+
   e2e:
     name: Playwright (desktop Chromium/WebKit, iPhone, Android)
     needs: verify

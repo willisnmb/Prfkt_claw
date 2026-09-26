@@ -1,0 +1,5 @@
+# Deliberate fake secrets in detector tests and a non-secret idempotency key
+# (reviewed 2026-09-26). Add entries only after confirming a finding is not a real credential.
+8cad6d9693f5a34fbb2f5df3d4afc8a6ffe3d3ba:tests/redclaw/secrets.test.ts:generic-api-key:63
+8cad6d9693f5a34fbb2f5df3d4afc8a6ffe3d3ba:tests/redclaw/secrets.test.ts:generic-api-key:64
+55fe83538187dee2f325f1b68cede30a4189ab61:scripts/flow01-harness.ts:generic-api-key:80

@@ -3,7 +3,8 @@ import type { CellPlan, Lead } from "./definition";
 /**
  * Side-effect ports for FLOW 01. Every call carries an idempotency key; a real
  * provider must dedupe on it (as payment/email providers do) so a retried call
- * after a crash returns the original result instead of acting twice.
+ * after a crash returns the original result instead of acting twice. `signal`
+ * is aborted when the step deadline passes; adapters should stop work on it.
  */
 
 export interface ModelUsage {
@@ -22,15 +23,15 @@ export interface ResearchResult {
 }
 
 export interface ResearchAdapter {
-  research(input: { idempotencyKey: string; lead: Lead; prompt: { system: string; user: string } }): Promise<ResearchResult>;
+  research(input: { idempotencyKey: string; signal?: AbortSignal; lead: Lead; prompt: { system: string; user: string } }): Promise<ResearchResult>;
 }
 
 export interface EmailAdapter {
-  send(input: { idempotencyKey: string; to: string; subject: string; body: string }): Promise<{ messageId: string }>;
+  send(input: { idempotencyKey: string; signal?: AbortSignal; to: string; subject: string; body: string }): Promise<{ messageId: string }>;
 }
 
 export interface PaymentAdapter {
-  createInvoice(input: { idempotencyKey: string; customerEmail: string; amountCents: number; reference: string }): Promise<{ invoiceId: string }>;
+  createInvoice(input: { idempotencyKey: string; signal?: AbortSignal; customerEmail: string; amountCents: number; reference: string }): Promise<{ invoiceId: string }>;
 }
 
 export interface ProvisionResult {
@@ -41,9 +42,9 @@ export interface ProvisionResult {
 
 export interface ProvisionerAdapter {
   /** Resumable: creates only resources missing for this key. */
-  provision(input: { idempotencyKey: string; plan: CellPlan }): Promise<ProvisionResult>;
+  provision(input: { idempotencyKey: string; signal?: AbortSignal; plan: CellPlan }): Promise<ProvisionResult>;
   /** Idempotent compensation: removes whatever exists for this key. */
-  teardown(input: { idempotencyKey: string }): Promise<{ removed: number }>;
+  teardown(input: { idempotencyKey: string; signal?: AbortSignal }): Promise<{ removed: number }>;
 }
 
 export interface AcceptanceCheck {
@@ -53,7 +54,7 @@ export interface AcceptanceCheck {
 }
 
 export interface AcceptanceAdapter {
-  run(input: { cellId: string; config: Record<string, unknown> }): Promise<{ passed: boolean; checks: AcceptanceCheck[] }>;
+  run(input: { cellId: string; config: Record<string, unknown>; signal?: AbortSignal }): Promise<{ passed: boolean; checks: AcceptanceCheck[] }>;
 }
 
 export interface Flow01Adapters {

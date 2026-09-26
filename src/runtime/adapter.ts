@@ -83,18 +83,23 @@ export interface DestroyReceipt {
   exportTaken: boolean;
 }
 
+/** Caller cancellation: an aborted signal stops the call and any retries. */
+export interface CallOpts {
+  signal?: AbortSignal;
+}
+
 export interface RuntimeAdapter {
   readonly id: RuntimeId;
   readonly kind: "tenant-cell" | "workflow-component" | "local-route";
   validate(spec: CellSpec): Promise<ValidationResult>;
   estimate(spec: CellSpec): Promise<CostEstimate>;
-  provision(spec: CellSpec, opts: { idempotencyKey: string }): Promise<CellHandle>;
-  health(handle: CellHandle): Promise<HealthReport>;
-  suspend(handle: CellHandle, opts: { idempotencyKey: string }): Promise<void>;
-  resume(handle: CellHandle, opts: { idempotencyKey: string }): Promise<void>;
-  export(handle: CellHandle): Promise<ExportBundle>;
+  provision(spec: CellSpec, opts: { idempotencyKey: string } & CallOpts): Promise<CellHandle>;
+  health(handle: CellHandle, opts?: CallOpts): Promise<HealthReport>;
+  suspend(handle: CellHandle, opts: { idempotencyKey: string } & CallOpts): Promise<void>;
+  resume(handle: CellHandle, opts: { idempotencyKey: string } & CallOpts): Promise<void>;
+  export(handle: CellHandle, opts?: CallOpts): Promise<ExportBundle>;
   /** Irreversible. Requires the caller to repeat the cell id and to have taken an export. */
-  destroy(handle: CellHandle, opts: { idempotencyKey: string; confirmCellId: string; exportTaken: boolean }): Promise<DestroyReceipt>;
+  destroy(handle: CellHandle, opts: { idempotencyKey: string; confirmCellId: string; exportTaken: boolean } & CallOpts): Promise<DestroyReceipt>;
 }
 
 export class ProvisioningDisabledError extends Error {
