@@ -14,6 +14,11 @@ export const metadata: Metadata = { title: "Flows" };
 export default async function AdminFlowsPage() {
   await requireOwner();
   const availability = getFlow01Availability();
+  const headline = !availability.enabled
+    ? "FLOW 01 is not running here"
+    : availability.payment === "stripe"
+      ? "Running with Stripe payments; email, research and provisioning are fakes"
+      : "Running with fake side-effect adapters";
   return (
     <>
       <AdminPageHeader
@@ -21,7 +26,7 @@ export default async function AdminFlowsPage() {
         description="Durable workflow runs. Every send, payment confirmation, provisioning and activation waits for your approval; runs resume from the database after any restart."
       />
       <div role="status" className={availability.enabled ? "mb-6 rounded-lg border border-border bg-card p-4 text-sm" : "mb-6 rounded-lg border border-dashed border-warning/60 p-4 text-sm"}>
-        <p className="font-medium">{availability.enabled ? "Running with fake side-effect adapters" : "FLOW 01 is not running here"}</p>
+        <p className="font-medium">{headline}</p>
         <p className="mt-1 text-muted-foreground">{availability.reason}</p>
       </div>
       <RequireDatabase>

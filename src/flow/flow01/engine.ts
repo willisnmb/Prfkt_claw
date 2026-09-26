@@ -222,53 +222,8 @@ export class Flow01Engine {
    * Inbound webhook. Deduplicated on (provider, event_id): a duplicate is
    * recorded as suppressed and changes nothing else.
    */
-  async ingestWebhook(input: { provider: string; eventId: string; type: string; payload: unknown }): Promise<{ duplicate: boolean; outcome: string; workflowId?: string }> {
-    return this.sql.transaction(async (tx) => {
-      const inserted = await maybeOne<{ provider: string }>(
-        tx,
-        `insert into public.flow_webhook_events (provider, event_id, type, payload) values ($1, $2, $3, $4::jsonb)
-         on conflict (provider, event_id) do nothing returning provider`,
-        [input.provider, input.eventId, input.type, JSON.stringify(input.payload ?? {})],
-      );
-      if (!inserted) {
-        const prior = await maybeOne<{ workflow_id: string | null }>(tx, "select workflow_id from public.flow_webhook_events where provider = $1 and event_id = $2", [input.provider, input.eventId]);
-        if (prior?.workflow_id) {
-          const run = mapRun(await one(tx, "update public.flow_runs set duplicates_suppressed = duplicates_suppressed + 1 where workflow_id = $1 returning *", [prior.workflow_id]));
-          await appendEvent(tx, run, { type: "webhook_duplicate", from: run.currentState, actor: `webhook:${input.provider}`, detail: { eventId: input.eventId, type: input.type } });
-        }
-        return { duplicate: true, outcome: "duplicate_suppressed", workflowId: prior?.workflow_id ?? undefined };
-      }
-
-      const schema = WebhookPayloads[input.type as WebhookType];
-      const parsed = schema?.safeParse(input.payload);
-      if (!schema || !parsed?.success) {
-        await tx.query("update public.flow_webhook_events set outcome = 'rejected_invalid' where provider = $1 and event_id = $2", [input.provider, input.eventId]);
-        return { duplicate: false, outcome: "rejected_invalid" };
-      }
-      const data = parsed.data as { workflowId: string } & Record<string, unknown>;
-      const runRow = await maybeOne<Record<string, unknown>>(tx, "select * from public.flow_runs where workflow_id = $1 for update", [data.workflowId]);
-      if (!runRow) {
-        await tx.query("update public.flow_webhook_events set outcome = 'unknown_workflow' where provider = $1 and event_id = $2", [input.provider, input.eventId]);
-        return { duplicate: false, outcome: "unknown_workflow" };
-      }
-      const run = mapRun(runRow);
-      await tx.query("update public.flow_webhook_events set workflow_id = $3 where provider = $1 and event_id = $2", [input.provider, input.eventId, run.workflowId]);
-
-      let patch: Partial<RunOutput> | undefined;
-      if (input.type === "lead.reply" && run.currentState === "WAITING_FOR_REPLY" && !run.output.reply) {
-        patch = { reply: { outcome: data.outcome as "accepted" | "declined", eventId: input.eventId } };
-      } else if (input.type === "payment.succeeded" && run.currentState === "PAYMENT_CONFIRMATION" && !run.output.payment) {
-        patch = { payment: { eventId: input.eventId, invoiceId: data.invoiceId as string, amountCents: data.amountCents as number } };
-        await insertEvidence(tx, run, { kind: "payment", passed: null, content: { eventId: input.eventId, invoiceId: data.invoiceId, amountCents: data.amountCents } });
-      }
-      const outcome = patch ? "applied" : "ignored_out_of_order";
-      await tx.query("update public.flow_webhook_events set outcome = $3 where provider = $1 and event_id = $2", [input.provider, input.eventId, outcome]);
-      if (patch) {
-        await tx.query("update public.flow_runs set output = output || $2::jsonb, status = 'running', next_attempt_at = null where workflow_id = $1", [run.workflowId, JSON.stringify(patch)]);
-      }
-      await appendEvent(tx, run, { type: patch ? "webhook_received" : "webhook_ignored", from: run.currentState, actor: `webhook:${input.provider}`, detail: { eventId: input.eventId, type: input.type } });
-      return { duplicate: false, outcome, workflowId: run.workflowId };
-    });
+  async ingestWebhook(input: WebhookIngest): Promise<WebhookIngestResult> {
+    return ingestFlow01Webhook(this.sql, input);
   }
 
   /** Operator retry for failed/blocked runs. Authorization is the caller's job. */
@@ -847,6 +802,78 @@ export class Flow01Engine {
         throw new Error("terminal state has no handler");
     }
   }
+}
+
+/* ======================================================== webhook ingest */
+
+export interface WebhookIngest {
+  provider: string;
+  eventId: string;
+  type: string;
+  payload: unknown;
+}
+
+export interface WebhookIngestResult {
+  duplicate: boolean;
+  outcome: string;
+  workflowId?: string;
+}
+
+/**
+ * Inbound webhook ingest, shared by the engine, the webhook endpoints and
+ * Stripe reconciliation (src/billing/reconcile.ts) so every path that records
+ * a reply or a payment goes through the same checks. Deduplicated on
+ * (provider, event_id): a duplicate is recorded as suppressed and changes
+ * nothing else. Needs only the SQL handle; advancing the run is the caller's
+ * (or the worker's) job.
+ */
+export async function ingestFlow01Webhook(sql: Sql, input: WebhookIngest): Promise<WebhookIngestResult> {
+  return sql.transaction(async (tx) => {
+    const inserted = await maybeOne<{ provider: string }>(
+      tx,
+      `insert into public.flow_webhook_events (provider, event_id, type, payload) values ($1, $2, $3, $4::jsonb)
+       on conflict (provider, event_id) do nothing returning provider`,
+      [input.provider, input.eventId, input.type, JSON.stringify(input.payload ?? {})],
+    );
+    if (!inserted) {
+      const prior = await maybeOne<{ workflow_id: string | null }>(tx, "select workflow_id from public.flow_webhook_events where provider = $1 and event_id = $2", [input.provider, input.eventId]);
+      if (prior?.workflow_id) {
+        const run = mapRun(await one(tx, "update public.flow_runs set duplicates_suppressed = duplicates_suppressed + 1 where workflow_id = $1 returning *", [prior.workflow_id]));
+        await appendEvent(tx, run, { type: "webhook_duplicate", from: run.currentState, actor: `webhook:${input.provider}`, detail: { eventId: input.eventId, type: input.type } });
+      }
+      return { duplicate: true, outcome: "duplicate_suppressed", workflowId: prior?.workflow_id ?? undefined };
+    }
+
+    const schema = WebhookPayloads[input.type as WebhookType];
+    const parsed = schema?.safeParse(input.payload);
+    if (!schema || !parsed?.success) {
+      await tx.query("update public.flow_webhook_events set outcome = 'rejected_invalid' where provider = $1 and event_id = $2", [input.provider, input.eventId]);
+      return { duplicate: false, outcome: "rejected_invalid" };
+    }
+    const data = parsed.data as { workflowId: string } & Record<string, unknown>;
+    const runRow = await maybeOne<Record<string, unknown>>(tx, "select * from public.flow_runs where workflow_id = $1 for update", [data.workflowId]);
+    if (!runRow) {
+      await tx.query("update public.flow_webhook_events set outcome = 'unknown_workflow' where provider = $1 and event_id = $2", [input.provider, input.eventId]);
+      return { duplicate: false, outcome: "unknown_workflow" };
+    }
+    const run = mapRun(runRow);
+    await tx.query("update public.flow_webhook_events set workflow_id = $3 where provider = $1 and event_id = $2", [input.provider, input.eventId, run.workflowId]);
+
+    let patch: Partial<RunOutput> | undefined;
+    if (input.type === "lead.reply" && run.currentState === "WAITING_FOR_REPLY" && !run.output.reply) {
+      patch = { reply: { outcome: data.outcome as "accepted" | "declined", eventId: input.eventId } };
+    } else if (input.type === "payment.succeeded" && run.currentState === "PAYMENT_CONFIRMATION" && !run.output.payment) {
+      patch = { payment: { eventId: input.eventId, invoiceId: data.invoiceId as string, amountCents: data.amountCents as number } };
+      await insertEvidence(tx, run, { kind: "payment", passed: null, content: { eventId: input.eventId, invoiceId: data.invoiceId, amountCents: data.amountCents } });
+    }
+    const outcome = patch ? "applied" : "ignored_out_of_order";
+    await tx.query("update public.flow_webhook_events set outcome = $3 where provider = $1 and event_id = $2", [input.provider, input.eventId, outcome]);
+    if (patch) {
+      await tx.query("update public.flow_runs set output = output || $2::jsonb, status = 'running', next_attempt_at = null where workflow_id = $1", [run.workflowId, JSON.stringify(patch)]);
+    }
+    await appendEvent(tx, run, { type: patch ? "webhook_received" : "webhook_ignored", from: run.currentState, actor: `webhook:${input.provider}`, detail: { eventId: input.eventId, type: input.type } });
+    return { duplicate: false, outcome, workflowId: run.workflowId };
+  });
 }
 
 /* ================================================================= helpers */

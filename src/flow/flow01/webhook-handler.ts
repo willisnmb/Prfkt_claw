@@ -1,11 +1,13 @@
 import { z } from "zod";
 import { verifyWebhook } from "@/security/webhooks";
 import type { Flow01Engine } from "./engine";
+import type { PaymentMode } from "./runtime-policy";
 
 /**
  * Inbound FLOW 01 webhook handling, independent of Next.js so it can be tested
  * against a real engine. Order: size limit → signature (with replay window)
  * → schema → dedupe/ingest → bounded advance. Responses never echo internals.
+ * Stripe deliveries have their own handler (src/billing/stripe-webhook.ts).
  */
 export const FLOW01_WEBHOOK_PROVIDERS = ["fake-email", "fake-pay"] as const;
 const MAX_BODY_BYTES = 64 * 1024;
@@ -27,9 +29,12 @@ export async function handleFlow01Webhook(input: {
   signature: string | null;
   secret: string | undefined;
   engine: Flow01Engine | null;
+  /** When payments go through Stripe, only Stripe may confirm them: the fake payment provider is closed. */
+  paymentMode?: PaymentMode;
   nowSeconds?: number;
 }): Promise<WebhookResponse> {
   if (!(FLOW01_WEBHOOK_PROVIDERS as readonly string[]).includes(input.provider)) return { status: 404, body: { error: "unknown provider" } };
+  if (input.provider === "fake-pay" && input.paymentMode === "stripe") return { status: 404, body: { error: "unknown provider" } };
   if (!input.engine) return { status: 503, body: { error: "workflow processing is not available" } };
   if (!input.secret) return { status: 503, body: { error: "webhook verification is not configured" } };
   if (Buffer.byteLength(input.rawBody, "utf8") > MAX_BODY_BYTES) return { status: 413, body: { error: "payload too large" } };
@@ -45,6 +50,7 @@ export async function handleFlow01Webhook(input: {
   }
   const env = Envelope.safeParse(json);
   if (!env.success) return { status: 400, body: { error: "invalid event" } };
+  if (env.data.type === "payment.succeeded" && input.paymentMode === "stripe") return { status: 400, body: { error: "invalid event" } };
 
   const result = await input.engine.ingestWebhook({ provider: input.provider, eventId: env.data.id, type: env.data.type, payload: env.data.data });
   if (!result.duplicate && result.outcome === "applied" && result.workflowId) {

@@ -3,6 +3,7 @@ import { AdminEmpty, AdminPageHeader, fmtDate, RequireDatabase } from "@/compone
 import { FlagToggle } from "@/components/admin/registry-forms";
 import { StatusBadge } from "@/components/dashboard/status-badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { checkStripeKey } from "@/billing/stripe";
 import { requireOwner } from "@/server/auth/owner";
 import { getSql } from "@/server/db/postgres";
 import { isSupabaseAuthConfigured, serverEnv } from "@/server/env";
@@ -13,11 +14,14 @@ export const metadata: Metadata = { title: "System" };
 export default async function AdminSystemPage() {
   await requireOwner();
   const env = serverEnv();
+  const stripeKey = checkStripeKey(env.STRIPE_SECRET_KEY, env.STRIPE_ALLOW_LIVE);
   const checks = [
     { label: "Supabase Auth configured", ok: isSupabaseAuthConfigured(env) },
     { label: "Owner list configured", ok: env.ADMIN_EMAILS.length > 0 },
     { label: "Control-plane database (DATABASE_URL)", ok: Boolean(env.DATABASE_URL) },
     { label: "Payment webhook secret", ok: Boolean(env.PAYMENT_WEBHOOK_SECRET), note: "only needed once billing is enabled" },
+    { label: "Stripe secret key", ok: stripeKey.ok, note: stripeKey.ok ? `${stripeKey.mode} mode` : env.STRIPE_SECRET_KEY ? "refused: live key or wrong format" : "only needed once billing is enabled" },
+    { label: "Stripe webhook secret", ok: Boolean(env.STRIPE_WEBHOOK_SECRET), note: "for /api/flow/webhooks/stripe" },
     { label: "Local model route (OLLAMA_BASE_URL)", ok: Boolean(env.OLLAMA_BASE_URL), note: "optional" },
   ];
   return (

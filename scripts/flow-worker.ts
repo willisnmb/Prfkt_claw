@@ -6,18 +6,29 @@
  */
 import { createPostgresSql } from "../src/server/db/postgres-core";
 import { Flow01Engine } from "../src/flow/flow01/engine";
-import { createFakeAdapters } from "../src/flow/flow01/fakes";
+import { createFlow01Adapters } from "../src/flow/flow01/adapter-set";
 import { flow01Availability } from "../src/flow/flow01/runtime-policy";
 
 const url = process.env.DATABASE_URL;
-const availability = flow01Availability({ NODE_ENV: process.env.NODE_ENV, databaseConfigured: Boolean(url) });
+// Same inputs as the web process (src/flow/flow01/wiring.ts), so both use the same payment provider.
+const availability = flow01Availability({
+  NODE_ENV: process.env.NODE_ENV,
+  databaseConfigured: Boolean(url),
+  BILLING_ENABLED: process.env.BILLING_ENABLED === "true",
+  STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY?.trim() || undefined,
+  STRIPE_ALLOW_LIVE: process.env.STRIPE_ALLOW_LIVE === "true",
+});
 if (!availability.enabled) {
   console.error(`flow-worker: not starting — ${availability.reason}`);
   process.exit(1);
 }
 
 const { sql, end } = createPostgresSql(url!, 3);
-const engine = new Flow01Engine({ sql, adapters: createFakeAdapters(sql), workerId: `worker-${process.pid}` });
+const adapters = createFlow01Adapters(sql, availability, {
+  stripeSecretKey: process.env.STRIPE_SECRET_KEY?.trim(),
+  stripeAllowLive: process.env.STRIPE_ALLOW_LIVE === "true",
+});
+const engine = new Flow01Engine({ sql, adapters, workerId: `worker-${process.pid}` });
 let stopping = false;
 for (const sig of ["SIGINT", "SIGTERM"] as const) process.on(sig, () => (stopping = true));
 
