@@ -23,6 +23,8 @@ import {
   type OwnerContext,
   type OwnerResult,
 } from "@/server/data/admin";
+import { cancelProvisioningJob, requeueProvisioningJob, runProvisioningJob } from "@/server/data/provisioning";
+import { resolveRuntimeAdapter } from "@/runtime/factory";
 
 export type AdminFormState = { ok: boolean; message: string } | null;
 
@@ -108,6 +110,39 @@ export async function createProvisioningJobAction(_prev: AdminFormState, fd: For
     (tx, ctx) => createProvisioningJob(tx, ctx, { deploymentRequestId: str(fd.get("deploymentRequestId")) }, serverEnv()),
     ["/admin/provisioning"],
   );
+}
+
+export async function requeueProvisioningJobAction(_prev: AdminFormState, fd: FormData): Promise<AdminFormState> {
+  return ownerMutation((tx, ctx) => requeueProvisioningJob(tx, ctx, { jobId: str(fd.get("jobId")) }, serverEnv()), ["/admin/provisioning"]);
+}
+
+export async function cancelProvisioningJobAction(_prev: AdminFormState, fd: FormData): Promise<AdminFormState> {
+  return ownerMutation((tx, ctx) => cancelProvisioningJob(tx, ctx, { jobId: str(fd.get("jobId")) }), ["/admin/provisioning"]);
+}
+
+/**
+ * Runs a queued job. Not an ownerMutation: the adapter call happens between
+ * two transactions (see runProvisioningJob), each carrying its own audit entry.
+ */
+export async function runProvisioningJobAction(_prev: AdminFormState, fd: FormData): Promise<AdminFormState> {
+  const principal = await requireOwner();
+  if (!isDatabaseConfigured()) return { ok: false, message: "The database is not configured in this environment." };
+  const requestId = (await headers()).get("x-request-id") ?? randomUUID();
+  const env = serverEnv();
+  try {
+    const res = await runProvisioningJob(
+      getSql(),
+      { actor: { userId: principal.userId, email: principal.email }, requestId },
+      { jobId: str(fd.get("jobId")) },
+      env,
+      { resolveAdapter: (runtime) => resolveRuntimeAdapter(runtime, env) },
+    );
+    revalidatePath("/admin/provisioning");
+    if (!res.ok) return { ok: false, message: res.error };
+    return { ok: true, message: res.data?.cellId ? `Cell ${res.data.cellId} is active.` : "Done." };
+  } catch (err) {
+    return { ok: false, message: describeError(err) };
+  }
 }
 
 export async function setRuntimeStatusAction(_prev: AdminFormState, fd: FormData): Promise<AdminFormState> {

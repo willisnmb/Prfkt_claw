@@ -7,7 +7,7 @@ Legend: ✅ passed with evidence · ⚠️ partial / verified only locally or ag
 ## Repository
 - ✅ Correct repo `willisnmb/Prfkt_claw`. Base `main` @ `cb7f932`, which contained only the GitHub starter `blank.yml`.
 - ✅ Existing work preserved. The starter `blank.yml` was replaced by `ci.yml`, which keeps the name "CI" and the same triggers.
-- ⚠️ CI configured (`.github/workflows/ci.yml`) but not yet run on GitHub (branch not pushed).
+- ✅ CI configured and green on GitHub (PR #1): verify, Playwright, gitleaks, Docker.
 - ✅ README and AGENTS are current.
 
 ## Build
@@ -42,7 +42,7 @@ Legend: ✅ passed with evidence · ⚠️ partial / verified only locally or ag
 - ✅ Audited owner actions (same-transaction audit; append-only log).
 
 ## Provisioning
-- ✅ Disabled by default · ✅ adapter interface · ✅ OpenClaw adapter validated against real OpenClaw cells, 14/14 (`scripts/verify-live-openclaw.ts`).
+- ✅ Disabled by default · ✅ adapter interface · ✅ OpenClaw adapter validated against real OpenClaw cells, 14/14 (`scripts/verify-live-openclaw.ts`). ✅ Owner-run provisioning jobs call the adapter (run, retry, cancel; audited; idempotent), tested against the fake controller.
 - ✅ Duplicate, failure, resume, export, destroy, health and cost tests pass against both the fake and the real controller. ⚠️ Cells have no model egress yet (F-006a).
 
 ## Billing

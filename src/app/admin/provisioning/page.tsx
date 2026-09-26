@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import { AdminEmpty, AdminPageHeader, fmtDate, RequireDatabase } from "@/components/admin/admin-page";
-import { CreateJobForm } from "@/components/admin/registry-forms";
+import { CreateJobForm, JobActions } from "@/components/admin/registry-forms";
 import { StatusBadge } from "@/components/dashboard/status-badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { requireOwner } from "@/server/auth/owner";
 import { getSql } from "@/server/db/postgres";
 import { serverEnv } from "@/server/env";
 import { listCells, listDeploymentRequests, listProvisioningJobs } from "@/server/data/admin";
+import { isFlagEnabled } from "@/server/flags";
 
 export const metadata: Metadata = { title: "Provisioning" };
 
@@ -36,7 +37,12 @@ export default async function AdminProvisioningPage() {
 
 async function Provisioning() {
   const sql = getSql();
-  const [deployments, jobs, cells] = await Promise.all([listDeploymentRequests(sql), listProvisioningJobs(sql), listCells(sql)]);
+  const [deployments, jobs, cells, gateOpen] = await Promise.all([
+    listDeploymentRequests(sql),
+    listProvisioningJobs(sql),
+    listCells(sql),
+    isFlagEnabled(sql, "provisioning_enabled", serverEnv()),
+  ]);
   const approvedWithoutJob = deployments.filter((d) => d.status === "APPROVED" && !d.job_status);
   return (
     <div className="space-y-10">
@@ -84,6 +90,7 @@ async function Provisioning() {
                   {j.blocked_reason ? ` · blocked: ${j.blocked_reason}` : ""}
                   {j.last_error ? ` · last error: ${j.last_error}` : ""}
                 </p>
+                <JobActions jobId={j.id} status={j.status} gateOpen={gateOpen} />
               </li>
             ))}
           </ul>

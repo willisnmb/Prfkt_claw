@@ -3,7 +3,10 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
+  cancelProvisioningJobAction,
   createProvisioningJobAction,
+  requeueProvisioningJobAction,
+  runProvisioningJobAction,
   setComputeEnabledAction,
   setFlagAction,
   setModelEnabledAction,
@@ -98,5 +101,53 @@ export function CreateJobForm({ deploymentRequestId }: { deploymentRequestId: st
         </>
       )}
     </AdminForm>
+  );
+}
+
+/** Owner controls for one provisioning job; which buttons appear depends on its status. */
+export function JobActions({ jobId, status, gateOpen }: { jobId: string; status: string; gateOpen: boolean }) {
+  const canRun = gateOpen && (status === "QUEUED" || status === "RUNNING");
+  const canQueue = gateOpen && (status === "BLOCKED" || status === "FAILED");
+  const canCancel = status === "BLOCKED" || status === "QUEUED" || status === "FAILED";
+  if (!canRun && !canQueue && !canCancel) return null;
+  return (
+    <div className="mt-3 flex flex-wrap gap-2">
+      {canRun && (
+        <AdminForm action={runProvisioningJobAction} inline>
+          {(pending) => (
+            <>
+              <input type="hidden" name="jobId" value={jobId} />
+              <Button type="submit" size="sm" className="min-h-11" disabled={pending}>
+                {pending ? "Provisioning… (up to 3 min)" : status === "RUNNING" ? "Resume run" : "Run"}
+              </Button>
+            </>
+          )}
+        </AdminForm>
+      )}
+      {canQueue && (
+        <AdminForm action={requeueProvisioningJobAction} inline>
+          {(pending) => (
+            <>
+              <input type="hidden" name="jobId" value={jobId} />
+              <Button type="submit" size="sm" variant="outline" className="min-h-11" disabled={pending}>
+                {status === "FAILED" ? "Retry" : "Queue"}
+              </Button>
+            </>
+          )}
+        </AdminForm>
+      )}
+      {canCancel && (
+        <AdminForm action={cancelProvisioningJobAction} inline>
+          {(pending) => (
+            <>
+              <input type="hidden" name="jobId" value={jobId} />
+              <Button type="submit" size="sm" variant="ghost" className="min-h-11" disabled={pending}>
+                Cancel job
+              </Button>
+            </>
+          )}
+        </AdminForm>
+      )}
+    </div>
   );
 }

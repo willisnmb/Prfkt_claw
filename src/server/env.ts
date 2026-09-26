@@ -42,6 +42,9 @@ const EnvSchema = z.object({
   PROVISIONING_ENABLED: flag,
   PAYMENT_WEBHOOK_SECRET: optionalString,
   OLLAMA_BASE_URL: optionalUrl,
+  /** PRFKT cell controller (docs/runtime/CELL_CONTROLLER.md). Server-only; the token never reaches the browser. */
+  PRFKT_CELL_CONTROLLER_URL: optionalUrl,
+  PRFKT_CELL_CONTROLLER_TOKEN: optionalString,
 });
 export type ServerEnv = z.infer<typeof EnvSchema>;
 

@@ -43,6 +43,8 @@ const env = (over: Partial<ServerEnv> = {}): ServerEnv => ({
   PROVISIONING_ENABLED: false,
   PAYMENT_WEBHOOK_SECRET: undefined,
   OLLAMA_BASE_URL: undefined,
+  PRFKT_CELL_CONTROLLER_URL: undefined,
+  PRFKT_CELL_CONTROLLER_TOKEN: undefined,
   ...over,
 });
 
